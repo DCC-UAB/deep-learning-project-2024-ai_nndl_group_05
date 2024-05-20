@@ -1,4 +1,8 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #dssable info messages
+
 import wandb
+import keras
 
 from data_processing import prepareData
 #from train_model import train

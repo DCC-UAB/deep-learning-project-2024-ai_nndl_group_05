@@ -1,7 +1,6 @@
 from __future__ import print_function
 import numpy as np
 import tensorflow as tf
-tf.get_logger().setLevel('ERROR') # dissable info messages
 
 NUM_SAMPLES = 90000
 
