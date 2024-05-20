@@ -2,7 +2,6 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #dssable info messages
 
 import wandb
-import keras
 
 from utils.data import prepareData
 from utils.training import train
@@ -54,7 +53,7 @@ def create_wandb():
 if __name__ == "__main__":
     
     # start a new wandb run to track this script
-    #wandb.login(key="8090840539532ccc2f8ea5c1595fde6dbb57bf56")
+    wandb.login(key="8090840539532ccc2f8ea5c1595fde6dbb57bf56")
     create_wandb()
 
     # Data preprocessing
