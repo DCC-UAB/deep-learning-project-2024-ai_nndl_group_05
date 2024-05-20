@@ -1,12 +1,18 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #dssable info messages
+
 from __future__ import print_function
 from keras.models import Model
 from keras.layers import Input, LSTM, Dense, GRU
 from keras.callbacks import TensorBoard
-import _pickle as pickle
+#import _pickle as pickle
+import pickle
 import wandb
-from wandb.keras import WandbCallback
+#from wandb.keras import WandbCallback
+from wandb.integration.keras import WandbCallback
 import tensorflow as tf
 from keras.utils.vis_utils import plot_model
+#from tensorflow.keras.utils import plot_model
 
 #-----------------GLOBAL VARIABLES-------------------#
 
@@ -175,15 +181,18 @@ def train(encoder_input_data, decoder_input_data, decoder_target_data, input_tok
 
     # we build the model
     model,decoder_outputs,encoder_inputs,encoder_states,decoder_inputs,decoder_lstm,decoder_dense=modelTranslation(num_encoder_tokens,num_decoder_tokens)
+    print("Model built successfully.")
 
     # we train it
     trainSeq2Seq(model,encoder_input_data, decoder_input_data,decoder_target_data, encoder_dataset, decoder_input_dataset, decoder_target_dataset)
     plot_model(model, to_file='model.png', show_shapes=True, show_layer_names=True)
+    print("Model trained successfully.")
 
     # we build the final model for the inference (slightly different) and we save it
     encoder_model,decoder_model,reverse_target_char_index=generateInferenceModel(encoder_inputs, encoder_states,input_token_index,target_token_index,decoder_lstm,decoder_inputs,decoder_dense)
     plot_model(encoder_model, to_file='model_encoder.png', show_shapes=True, show_layer_names=True)
     plot_model(decoder_model, to_file='model_decoder.png', show_shapes=True, show_layer_names=True)
+    print("Final model built successfully.")
 
     # we save the object to convert the sequence to encoding  and encoding to sequence
     # our model is made for being used with different langages that do not have the same number of letters and the same alphabet

@@ -64,12 +64,15 @@ def encodingChar(input_characters,target_characters,input_texts,target_texts):
     num_decoder_tokens = len(target_characters) #numero de lletres diferents llengua sortida
     max_encoder_seq_length = max([len(txt) for txt in input_texts]) #max len d'una linia entrada
     max_decoder_seq_length = max([len(txt) for txt in target_texts]) #max len d'una linia sortida
+
+    print("#--------------data info 1---------------#")
     print('Number of num_encoder_tokens:', num_encoder_tokens)
     print('Number of samples:', len(input_texts))
     print('Number of unique input tokens:', num_encoder_tokens)
     print('Number of unique output tokens:', num_decoder_tokens)
     print('Max sequence length for inputs:', max_encoder_seq_length)
     print('Max sequence length for outputs:', max_decoder_seq_length)
+    print("#----------------------------------------#")
     
     input_token_index = dict([(char, i) for i, char in enumerate(input_characters)]) # {"a": 0, "b": 1, "?": 2}
     target_token_index = dict([(char, i) for i, char in enumerate(target_characters)])
@@ -109,8 +112,8 @@ def prepareData(data_path):
         
     encoder_dataset, decoder_input_dataset, decoder_target_dataset  = create_data_loader(encoder_input_data, decoder_input_data, decoder_target_data)
     
-    # print data info
-    print("#--------------data info---------------#")
+    """
+    print("#--------------data info 2---------------#")
     print("encoder_input_data:",len(encoder_input_data),type(encoder_input_data))
     print("decoder_input_data:",len(decoder_input_data),type(decoder_input_data))
     print("decoder_target_data:",len(decoder_target_data),type(decoder_target_data))
@@ -129,6 +132,6 @@ def prepareData(data_path):
     print("decoder_input_dataset:",len(decoder_input_dataset),type(decoder_input_dataset))
     print("decoder_target_dataset:",len(decoder_target_dataset),type(decoder_target_dataset))
 
-    print("#--------------------------------------#")
+    print("#----------------------------------------#")"""
 
     return encoder_input_data, decoder_input_data, decoder_target_data, input_token_index, target_token_index,input_texts,target_texts,num_encoder_tokens,num_decoder_tokens,max_encoder_seq_length, encoder_dataset, decoder_input_dataset, decoder_target_dataset
