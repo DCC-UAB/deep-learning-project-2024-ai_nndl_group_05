@@ -13,7 +13,7 @@ from test import *
 from utils.utils import *
 from tqdm.auto import tqdm
 
-# Ensure deterministic behavior
+# Ensure deterministic behavio
 torch.backends.cudnn.deterministic = True
 random.seed(hash("setting random seeds") % 2**32 - 1)
 np.random.seed(hash("improves reproducibility") % 2**32 - 1)
