@@ -8,9 +8,9 @@ import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
 
-from train import *
-from test import *
-from utils.utils import *
+from template.train import *
+from template.test import *
+from template.utils.utils import *
 from tqdm.auto import tqdm
 
 # Ensure deterministic behavior
