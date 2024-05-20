@@ -1,8 +1,7 @@
 import wandb
 
 from data_processing import prepareData
-from train_model import train
-#from test_model import test
+#from train_model import train
 
 #-----------------GLOBAL VARIABLES-------------------#
 
@@ -50,18 +49,12 @@ def create_wandb():
 # -------------------MAIN-----------------------#
 
 if __name__ == "__main__":
-    wandb.login()
+    #wandb.login(key=)
     # start a new wandb run to track this script
-    create_wandb()
+    #create_wandb()
 
     # Data preprocessing
-    #encoder_input_data, decoder_input_data, decoder_target_data, input_token_index, target_token_index,input_texts,target_texts,num_encoder_tokens,num_decoder_tokens,num_decoder_tokens,max_encoder_seq_length, encoder_dataset, decoder_input_dataset, decoder_target_dataset=prepareData(data_path)
-    print(prepareData(data_path))
+    encoder_input_data, decoder_input_data, decoder_target_data, input_token_index, target_token_index,input_texts,target_texts,num_encoder_tokens,num_decoder_tokens,max_encoder_seq_length, encoder_dataset, decoder_input_dataset, decoder_target_dataset=prepareData(data_path)
     
     # Training the model
-    #train(encoder_input_data, decoder_input_data, decoder_target_data, input_token_index, target_token_index,input_texts,target_texts,num_encoder_tokens,num_decoder_tokens,num_decoder_tokens,max_encoder_seq_length, encoder_dataset, decoder_input_dataset, decoder_target_dataset)
-    
-    # Test the model - por separado (quitar de aquí)
-    #test(input("Enter sentence to translate: "))
-    #sentence = "What is going on?"
-    #test(sentence)
+    #train(encoder_input_data, decoder_input_data, decoder_target_data, input_token_index, target_token_index,input_texts,target_texts,num_encoder_tokens,num_decoder_tokens,max_encoder_seq_length, encoder_dataset, decoder_input_dataset, decoder_target_dataset)

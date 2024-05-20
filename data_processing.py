@@ -1,7 +1,7 @@
 from __future__ import print_function
 import numpy as np
 import tensorflow as tf
-import main
+tf.get_logger().setLevel('ERROR') # dissable info messages
 
 NUM_SAMPLES = 90000
 
@@ -13,7 +13,9 @@ def extractChar(data_path, exchangeLanguage=False):
     target_texts = []
     input_characters = set()
     target_characters = set()
-    lines = open(data_path).read().split('\n')
+    #lines = open(data_path).read().split('\n')
+    with open(data_path, encoding='utf-8') as file:
+        lines = file.read().split('\n')
 
     if (exchangeLanguage==False):
 
@@ -108,4 +110,26 @@ def prepareData(data_path):
         
     encoder_dataset, decoder_input_dataset, decoder_target_dataset  = create_data_loader(encoder_input_data, decoder_input_data, decoder_target_data)
     
-    return encoder_input_data, decoder_input_data, decoder_target_data, input_token_index, target_token_index,input_texts,target_texts,num_encoder_tokens,num_decoder_tokens,num_decoder_tokens,max_encoder_seq_length, encoder_dataset, decoder_input_dataset, decoder_target_dataset
+    # print data info
+    print("#--------------data info---------------#")
+    print("encoder_input_data:",len(encoder_input_data),type(encoder_input_data))
+    print("decoder_input_data:",len(decoder_input_data),type(decoder_input_data))
+    print("decoder_target_data:",len(decoder_target_data),type(decoder_target_data))
+
+    print("input_token_index:",len(input_token_index),type(input_token_index))
+    print("target_token_index:",len(target_token_index),type(target_token_index))
+
+    print("input_texts:",len(input_texts),type(input_texts))
+    print("target_texts:",len(target_texts),type(target_texts))
+
+    print("num_encoder_tokens:",num_encoder_tokens,type(num_encoder_tokens))
+    print("num_decoder_tokens:",num_decoder_tokens,type(num_decoder_tokens))
+    print("max_encoder_seq_length:",max_encoder_seq_length,type(max_encoder_seq_length))
+
+    print("encoder_dataset:",len(encoder_dataset),type(encoder_dataset))
+    print("decoder_input_dataset:",len(decoder_input_dataset),type(decoder_input_dataset))
+    print("decoder_target_dataset:",len(decoder_target_dataset),type(decoder_target_dataset))
+
+    print("#--------------------------------------#")
+
+    return encoder_input_data, decoder_input_data, decoder_target_data, input_token_index, target_token_index,input_texts,target_texts,num_encoder_tokens,num_decoder_tokens,max_encoder_seq_length, encoder_dataset, decoder_input_dataset, decoder_target_dataset
