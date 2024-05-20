@@ -1,6 +1,5 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #dssable info messages
-import subprocess 
 
 import wandb
 import keras
@@ -23,7 +22,6 @@ LOG_PATH='./log'
 data_path = './spa-eng/spa.txt' #139705 lines
 encoder_path='encoder_modelPredTranslation.h5'
 decoder_path='decoder_modelPredTranslation.h5'
-requirements_file = 'requirements.txt'
 
 name = "Execution"
 opt = 'rmsprop' #'adam'
@@ -42,19 +40,6 @@ config_defaults = {
 
 # ------------------FUNCTIONS-------------------#
 
-def install_packages(requirements_file):
-    with open(requirements_file, 'r') as f:
-        requirements = f.readlines()
-    
-    # Strip newline characters
-    requirements = [req.strip() for req in requirements if req.strip()]
-
-    # Construct pip install command
-    command = ['pip', 'install'] + requirements
-
-    # Execute the command
-    subprocess.call(command)
-
 def create_wandb():
     wandb.init(
         # set the wandb project where this run will be logged
@@ -67,9 +52,6 @@ def create_wandb():
 # -------------------MAIN-----------------------#
 
 if __name__ == "__main__":
-
-    #install necessary packages 
-    install_packages(requirements_file)
     
     # start a new wandb run to track this script
     #wandb.login(key="8090840539532ccc2f8ea5c1595fde6dbb57bf56")

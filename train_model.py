@@ -1,7 +1,8 @@
+from __future__ import print_function
+
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #dssable info messages
 
-from __future__ import print_function
 from keras.models import Model
 from keras.layers import Input, LSTM, Dense, GRU
 from keras.callbacks import TensorBoard
