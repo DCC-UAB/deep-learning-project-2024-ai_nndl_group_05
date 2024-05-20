@@ -18,7 +18,7 @@ from keras.utils.vis_utils import plot_model
 #-----------------GLOBAL VARIABLES-------------------#
 
 batch_size = 128  # Batch size for training.
-epochs = 25  # Number of epochs to train for.
+epochs = 3  # Number of epochs to train for.
 latent_dim = 256 #1024 # Latent dimensionality of the encoding space.
 num_samples =  90000 # Number of samples to train on.
 validation_split = 0.2
@@ -28,8 +28,8 @@ LOG_PATH='./log'
 # Path to the data txt file on disk.
 # './cat-eng/cat.txt' el dataset en catala nomes te 1336 linies
 data_path = './spa-eng/spa.txt' #139705 lines
-encoder_path='encoder_modelPredTranslation.h5'
-decoder_path='decoder_modelPredTranslation.h5'
+encoder_path='/models/encoder_modelTranslation.h5'
+decoder_path='/models/decoder_modelTranslation.h5'
 
 
 name = "Execution"
@@ -182,19 +182,20 @@ def train(encoder_input_data, decoder_input_data, decoder_target_data, input_tok
 
     # we build the model
     model,decoder_outputs,encoder_inputs,encoder_states,decoder_inputs,decoder_lstm,decoder_dense=modelTranslation(num_encoder_tokens,num_decoder_tokens)
-    print("Model built successfully.")
+    print("Model built successfully.\n")
 
     # we train it
     trainSeq2Seq(model,encoder_input_data, decoder_input_data,decoder_target_data, encoder_dataset, decoder_input_dataset, decoder_target_dataset)
-    plot_model(model, to_file='model.png', show_shapes=True, show_layer_names=True)
-    print("Model trained successfully.")
+    #plot_model(model, to_file='model.png', show_shapes=True, show_layer_names=True)
+    print("\nModel trained successfully.\n")
 
     # we build the final model for the inference (slightly different) and we save it
     encoder_model,decoder_model,reverse_target_char_index=generateInferenceModel(encoder_inputs, encoder_states,input_token_index,target_token_index,decoder_lstm,decoder_inputs,decoder_dense)
-    plot_model(encoder_model, to_file='model_encoder.png', show_shapes=True, show_layer_names=True)
-    plot_model(decoder_model, to_file='model_decoder.png', show_shapes=True, show_layer_names=True)
-    print("Final model built successfully.")
+    #plot_model(encoder_model, to_file='model_encoder.png', show_shapes=True, show_layer_names=True)
+    #plot_model(decoder_model, to_file='model_decoder.png', show_shapes=True, show_layer_names=True)
+    print("\nFinal model built successfully.\n")
 
     # we save the object to convert the sequence to encoding  and encoding to sequence
     # our model is made for being used with different langages that do not have the same number of letters and the same alphabet
-    saveChar2encoding("./output/char2encoding.pkl",input_token_index,max_encoder_seq_length,num_encoder_tokens,reverse_target_char_index,num_decoder_tokens,target_token_index)
+    saveChar2encoding("./models/char2encoding.pkl",input_token_index,max_encoder_seq_length,num_encoder_tokens,reverse_target_char_index,num_decoder_tokens,target_token_index)
+    print("Final model saved successfully.\n")
