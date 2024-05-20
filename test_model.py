@@ -1,7 +1,7 @@
 from __future__ import print_function
 from keras.models import load_model
 import numpy as np
-import _pickle as pickle
+import pickle
 import wandb
 
 #-----------------GLOBAL VARIABLES-------------------#
