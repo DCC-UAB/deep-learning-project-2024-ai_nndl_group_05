@@ -1,6 +1,7 @@
 import subprocess
 
 
+
 def install_packages(requirements_file):
     with open(requirements_file, 'r') as f:
         requirements = f.readlines()
@@ -19,3 +20,5 @@ if __name__ == "__main__":
     requirements_file = 'requirements.txt'
     #install necessary packages 
     install_packages(requirements_file)
+    
+    
