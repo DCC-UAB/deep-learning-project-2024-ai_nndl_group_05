@@ -19,3 +19,4 @@ if __name__ == "__main__":
     requirements_file = 'requirements.txt'
     #install necessary packages 
     install_packages(requirements_file)
+    
