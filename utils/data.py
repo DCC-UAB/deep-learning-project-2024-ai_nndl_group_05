@@ -2,7 +2,8 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 import config
-
+import torch
+from torch.utils.data import TensorDataset, DataLoader, random_split
 
 
 def extractChar(data_path, exchangeLanguage=False):
@@ -91,14 +92,49 @@ def encodingChar(input_characters,target_characters,input_texts,target_texts):
     return encoder_input_data, decoder_input_data, decoder_target_data, input_token_index, target_token_index,num_encoder_tokens,num_decoder_tokens,num_decoder_tokens,max_encoder_seq_length
 
 
-def create_data_loader(encoder_input_data, decoder_input_data, decoder_target_data):
+
+def create_data_loader1(encoder_input_data, decoder_input_data, decoder_target_data):
     # Create TensorFlow datasets from the encoded data arrays
     encoder_dataset = tf.data.Dataset.from_tensor_slices(encoder_input_data)
     decoder_input_dataset = tf.data.Dataset.from_tensor_slices(decoder_input_data)
     decoder_target_dataset = tf.data.Dataset.from_tensor_slices(decoder_target_data)
+
+    print("#--------data info 2 (tensorflow)-------#")
+    print("encoder_dataset (tf): ",len(encoder_dataset), type(encoder_dataset))
+    print("decoder_input_dataset (tf): ",len(decoder_input_dataset),type(decoder_input_dataset))
+    print("decoder_target_dataset (tf): ",len(decoder_target_dataset),type(decoder_target_dataset))
+    print("#---------------------------------------#")
         
     return encoder_dataset, decoder_input_dataset, decoder_target_dataset 
 
+def create_data_loader2(encoder_input_data, decoder_input_data, decoder_target_data, batch_size=32, shuffle=True):
+    # Convert numpy arrays to PyTorch tensors if they are numpy arrays
+    if isinstance(encoder_input_data, np.ndarray):
+        encoder_input_data = torch.tensor(encoder_input_data)
+    if isinstance(decoder_input_data, np.ndarray):
+        decoder_input_data = torch.tensor(decoder_input_data)
+    if isinstance(decoder_target_data, np.ndarray):
+        decoder_target_data = torch.tensor(decoder_target_data)
+    
+    # Create datasets and data loaders
+    train_dataset = TensorDataset(encoder_input_data, decoder_input_data, decoder_target_data)
+    val_size = int(config.validation_split * len(train_dataset))
+    train_size = len(train_dataset) - val_size
+    train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
+    train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=config.batch_size)
+    
+    print("#-----------data info 3 (pytorch)----------#")
+    print("train_dataset",len(train_dataset),type(train_dataset))
+    print("val_size",val_size)
+    print("train_size",train_size)
+    print("train_dataset",len(train_dataset),type(train_dataset))
+    print("val_dataset",len(val_dataset),type(val_dataset))
+    print("train_loader:",len(train_loader),type(train_loader))
+    print("val_loader:",len(val_loader),type(val_loader))
+    print("#----------------------------------------#")
+
+    return train_loader, val_loader
 
 
 #--------------------MAIN----------------------#
@@ -109,10 +145,11 @@ def prepareData(data_path):
 
     encoder_input_data, decoder_input_data, decoder_target_data, input_token_index, target_token_index,num_encoder_tokens,num_decoder_tokens,num_decoder_tokens,max_encoder_seq_length =encodingChar(input_characters,target_characters,input_texts,target_texts)
         
-    encoder_dataset, decoder_input_dataset, decoder_target_dataset  = create_data_loader(encoder_input_data, decoder_input_data, decoder_target_data)
+    encoder_dataset, decoder_input_dataset, decoder_target_dataset  = create_data_loader1(encoder_input_data, decoder_input_data, decoder_target_data)
+    train_loader, val_loader  = create_data_loader2(encoder_input_data, decoder_input_data, decoder_target_data)
     
     
-    print("#--------------data info 2---------------#")
+    print("#--------------data info 4---------------#")
     print("encoder_input_data:",len(encoder_input_data),type(encoder_input_data))
     print("decoder_input_data:",len(decoder_input_data),type(decoder_input_data))
     print("decoder_target_data:",len(decoder_target_data),type(decoder_target_data))
@@ -127,10 +164,5 @@ def prepareData(data_path):
     print("num_decoder_tokens:",num_decoder_tokens,type(num_decoder_tokens))
     print("max_encoder_seq_length:",max_encoder_seq_length,type(max_encoder_seq_length))
 
-    print("encoder_dataset:",len(encoder_dataset),type(encoder_dataset))
-    print("decoder_input_dataset:",len(decoder_input_dataset),type(decoder_input_dataset))
-    print("decoder_target_dataset:",len(decoder_target_dataset),type(decoder_target_dataset))
-
     print("#----------------------------------------#\n")
-
-    return encoder_input_data, decoder_input_data, decoder_target_data, input_token_index, target_token_index,input_texts,target_texts,num_encoder_tokens,num_decoder_tokens,max_encoder_seq_length, encoder_dataset, decoder_input_dataset, decoder_target_dataset
+    return encoder_input_data, decoder_input_data, decoder_target_data, input_token_index, target_token_index,input_texts,target_texts,num_encoder_tokens,num_decoder_tokens,max_encoder_seq_length, train_loader, val_loader

@@ -11,7 +11,7 @@ learning_rate = 0.0001
 cell_type = 'LSTM' #'GRU'
 ltsm_layers = 1
 dropouts = 0
-opt = 'rmsprop' #'adam'
+opt = 'RMSprop' #'adam'
 name = "Execution"
 
 # Path to the data txt file on disk.
