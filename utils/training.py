@@ -18,7 +18,7 @@ from keras.utils.vis_utils import plot_model
 #-----------------GLOBAL VARIABLES-------------------#
 
 batch_size = 128  # Batch size for training.
-epochs = 3  # Number of epochs to train for.
+epochs = 1  # Number of epochs to train for.
 latent_dim = 256 #1024 # Latent dimensionality of the encoding space.
 num_samples =  90000 # Number of samples to train on.
 validation_split = 0.2
@@ -28,8 +28,8 @@ LOG_PATH='./log'
 # Path to the data txt file on disk.
 # './cat-eng/cat.txt' el dataset en catala nomes te 1336 linies
 data_path = './spa-eng/spa.txt' #139705 lines
-encoder_path='/models/encoder_modelTranslation.h5'
-decoder_path='/models/decoder_modelTranslation.h5'
+encoder_path='./models/encoder_modelTranslation.h5'
+decoder_path='./models/decoder_modelTranslation.h5'
 
 
 name = "Execution"
@@ -84,8 +84,8 @@ def modelTranslation(num_encoder_tokens,num_decoder_tokens):
         return model,decoder_outputs,encoder_inputs,encoder_states,decoder_inputs,decoder_gru,decoder_dense
 
 def trainSeq2Seq(model,encoder_input_data, decoder_input_data,decoder_target_data, encoder_dataset, decoder_input_dataset, decoder_target_dataset):
-# We load tensorboad
-# We train the model
+    # We load tensorboad
+    # We train the model
     LOG_PATH="./output/log"
         
     tbCallBack = TensorBoard(log_dir=LOG_PATH, histogram_freq=0, write_graph=True, write_images=True)
@@ -118,8 +118,8 @@ def trainSeq2Seq(model,encoder_input_data, decoder_input_data,decoder_target_dat
 
 
 def generateInferenceModel(encoder_inputs, encoder_states,input_token_index,target_token_index,decoder_lstm,decoder_inputs,decoder_dense):
-# Once the model is trained, we connect the encoder/decoder and we create a new model
-# Finally we save everything
+    # Once the model is trained, we connect the encoder/decoder and we create a new model
+    # Finally we save everything
     if wandb.config.cell_type == 'LSTM':
         encoder_model = Model(encoder_inputs, encoder_states)
 
@@ -186,13 +186,13 @@ def train(encoder_input_data, decoder_input_data, decoder_target_data, input_tok
 
     # we train it
     trainSeq2Seq(model,encoder_input_data, decoder_input_data,decoder_target_data, encoder_dataset, decoder_input_dataset, decoder_target_dataset)
-    #plot_model(model, to_file='model.png', show_shapes=True, show_layer_names=True)
+    plot_model(model, to_file='./models/model.png', show_shapes=True, show_layer_names=True)
     print("\nModel trained successfully.\n")
 
     # we build the final model for the inference (slightly different) and we save it
     encoder_model,decoder_model,reverse_target_char_index=generateInferenceModel(encoder_inputs, encoder_states,input_token_index,target_token_index,decoder_lstm,decoder_inputs,decoder_dense)
-    #plot_model(encoder_model, to_file='model_encoder.png', show_shapes=True, show_layer_names=True)
-    #plot_model(decoder_model, to_file='model_decoder.png', show_shapes=True, show_layer_names=True)
+    plot_model(encoder_model, to_file='./models/model_encoder.png', show_shapes=True, show_layer_names=True)
+    plot_model(decoder_model, to_file='./models/model_decoder.png', show_shapes=True, show_layer_names=True)
     print("\nFinal model built successfully.\n")
 
     # we save the object to convert the sequence to encoding  and encoding to sequence
