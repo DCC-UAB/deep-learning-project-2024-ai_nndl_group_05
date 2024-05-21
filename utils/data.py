@@ -1,6 +1,7 @@
 from __future__ import print_function
 import numpy as np
-import tensorflow as tf
+#import tensorflow as tf
+import pickle
 import config
 import torch
 from torch.utils.data import TensorDataset, DataLoader, random_split
@@ -51,6 +52,17 @@ def extractChar(data_path, exchangeLanguage=False):
 
     return input_characters,target_characters,input_texts,target_texts
     
+def saveChar2encoding(filename,input_token_index,max_encoder_seq_length,num_encoder_tokens,reverse_target_char_index,num_decoder_tokens,target_token_index):
+    f = open(filename, "wb")
+    pickle.dump(input_token_index, f)
+    pickle.dump(max_encoder_seq_length, f)
+    pickle.dump(num_encoder_tokens, f)
+    pickle.dump(reverse_target_char_index, f)
+    
+    pickle.dump(num_decoder_tokens, f)
+    
+    pickle.dump(target_token_index, f)
+    f.close()    
     
 def encodingChar(input_characters,target_characters,input_texts,target_texts):
     # We encode the dataset in a format that can be used by our Seq2Seq model (hot encoding).
@@ -66,7 +78,6 @@ def encodingChar(input_characters,target_characters,input_texts,target_texts):
     max_decoder_seq_length = max([len(txt) for txt in target_texts]) #max len d'una linia sortida
 
     """print("#--------------data info 1---------------#")
-    print('Number of num_encoder_tokens:', num_encoder_tokens)
     print('Number of samples:', len(input_texts))
     print('Number of unique input tokens:', num_encoder_tokens)
     print('Number of unique output tokens:', num_decoder_tokens)
@@ -89,25 +100,33 @@ def encodingChar(input_characters,target_characters,input_texts,target_texts):
             if t > 0:
                 decoder_target_data[i, t - 1, target_token_index[char]] = 1.
 
-    return encoder_input_data, decoder_input_data, decoder_target_data, input_token_index, target_token_index,num_encoder_tokens,num_decoder_tokens,num_decoder_tokens,max_encoder_seq_length
+    # Reverse-lookup token index to decode sequences back to something readable
+    reverse_input_char_index = {i: char for char, i in input_token_index.items()}
+    reverse_target_char_index = {i: char for char, i in target_token_index.items()}
+
+    # we save the object to convert the sequence to encoding  and encoding to sequence
+    # our model is made for being used with different langages that do not have the same number of letters and the same alphabet
+    saveChar2encoding("./models/char2encoding.pkl",input_token_index,max_encoder_seq_length,num_encoder_tokens,reverse_target_char_index,num_decoder_tokens,target_token_index)
+
+    return encoder_input_data, decoder_input_data, decoder_target_data
 
 
 
-def create_data_loader1(encoder_input_data, decoder_input_data, decoder_target_data):
+"""def create_data_loader1(encoder_input_data, decoder_input_data, decoder_target_data):
     # Create TensorFlow datasets from the encoded data arrays
     encoder_dataset = tf.data.Dataset.from_tensor_slices(encoder_input_data)
     decoder_input_dataset = tf.data.Dataset.from_tensor_slices(decoder_input_data)
     decoder_target_dataset = tf.data.Dataset.from_tensor_slices(decoder_target_data)
 
-    """print("#--------data info 2 (tensorflow)-------#")
+    print("#--------data info 2 (tensorflow)-------#")
     print("encoder_dataset (tf): ",len(encoder_dataset), type(encoder_dataset))
     print("decoder_input_dataset (tf): ",len(decoder_input_dataset),type(decoder_input_dataset))
     print("decoder_target_dataset (tf): ",len(decoder_target_dataset),type(decoder_target_dataset))
-    print("#---------------------------------------#")"""
+    print("#---------------------------------------#")
         
-    return encoder_dataset, decoder_input_dataset, decoder_target_dataset 
+    return encoder_dataset, decoder_input_dataset, decoder_target_dataset """
 
-def create_data_loader2(encoder_input_data, decoder_input_data, decoder_target_data, batch_size=32, shuffle=True):
+def create_data_loader(encoder_input_data, decoder_input_data, decoder_target_data):
     # Convert numpy arrays to PyTorch tensors if they are numpy arrays
     if isinstance(encoder_input_data, np.ndarray):
         encoder_input_data = torch.tensor(encoder_input_data)
@@ -124,7 +143,7 @@ def create_data_loader2(encoder_input_data, decoder_input_data, decoder_target_d
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=config.batch_size)
     
-    """print("#-----------data info 3 (pytorch)----------#")
+    """print("#------------data info 2----------------#")
     print("train_dataset",len(train_dataset),type(train_dataset))
     print("val_size",val_size)
     print("train_size",train_size)
@@ -137,16 +156,16 @@ def create_data_loader2(encoder_input_data, decoder_input_data, decoder_target_d
     return train_loader, val_loader
 
 
+
 #--------------------MAIN----------------------#
 
 def prepareData(data_path):
 
-    input_characters,target_characters,input_texts,target_texts=extractChar(data_path)
+    input_characters,target_characters,input_texts,target_texts = extractChar(data_path)
 
-    encoder_input_data, decoder_input_data, decoder_target_data, input_token_index, target_token_index,num_encoder_tokens,num_decoder_tokens,num_decoder_tokens,max_encoder_seq_length =encodingChar(input_characters,target_characters,input_texts,target_texts)
+    encoder_input_data, decoder_input_data, decoder_target_data = encodingChar(input_characters,target_characters,input_texts,target_texts)
         
-    encoder_dataset, decoder_input_dataset, decoder_target_dataset  = create_data_loader1(encoder_input_data, decoder_input_data, decoder_target_data)
-    train_loader, val_loader  = create_data_loader2(encoder_input_data, decoder_input_data, decoder_target_data)
+    train_loader, val_loader  = create_data_loader(encoder_input_data, decoder_input_data, decoder_target_data)
     
     
     """print("#--------------data info 4---------------#")
@@ -165,4 +184,4 @@ def prepareData(data_path):
     print("max_encoder_seq_length:",max_encoder_seq_length,type(max_encoder_seq_length))
     print("#----------------------------------------#\n")"""
 
-    return encoder_input_data, decoder_input_data, decoder_target_data, input_token_index, target_token_index,input_texts,target_texts,num_encoder_tokens,num_decoder_tokens,max_encoder_seq_length, train_loader, val_loader
+    return train_loader, val_loader

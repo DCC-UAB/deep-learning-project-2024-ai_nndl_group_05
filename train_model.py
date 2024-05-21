@@ -34,20 +34,20 @@ def create_wandb():
 
 if __name__ == "__main__":
     
-    """# start a new wandb run to track this script
+    # start a new wandb run to track this script
     wandb.login(key="8090840539532ccc2f8ea5c1595fde6dbb57bf56")
-    create_wandb()"""
+    create_wandb()
 
     # Data preprocessing
     print("\n#----------------------------------------#")
     print("-------STARTING DATA PROCESSING------------")
     print("#----------------------------------------#\n")
     
-    encoder_input_data, decoder_input_data, decoder_target_data, input_token_index, target_token_index,input_texts,target_texts,num_encoder_tokens,num_decoder_tokens,max_encoder_seq_length, train_loader, val_loader=prepareData(config.data_path)
+    train_loader, val_loader = prepareData(config.data_path)
     
     # Training the model
     print("\n#----------------------------------------#")
     print("-------STARTING MODEL TRAINING------------")
     print("#----------------------------------------#\n")
-    train(input_token_index, target_token_index,num_encoder_tokens,num_decoder_tokens,max_encoder_seq_length, train_loader,val_loader)
+    train(train_loader,val_loader)
     
