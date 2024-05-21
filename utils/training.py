@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #dssable info messages
+import config
 
 from keras.models import Model
 from keras.layers import Input, LSTM, Dense, GRU
@@ -15,27 +16,7 @@ import tensorflow as tf
 from keras.utils.vis_utils import plot_model
 #from tensorflow.keras.utils import plot_model
 
-#-----------------GLOBAL VARIABLES-------------------#
 
-batch_size = 128  # Batch size for training.
-epochs = 1  # Number of epochs to train for.
-latent_dim = 256 #1024 # Latent dimensionality of the encoding space.
-num_samples =  90000 # Number of samples to train on.
-validation_split = 0.2
-learning_rate = 0.0001
-
-LOG_PATH='./log'
-# Path to the data txt file on disk.
-# './cat-eng/cat.txt' el dataset en catala nomes te 1336 linies
-data_path = './spa-eng/spa.txt' #139705 lines
-encoder_path='./models/encoder_modelTranslation.h5'
-decoder_path='./models/decoder_modelTranslation.h5'
-
-
-name = "Execution"
-opt = 'rmsprop' #'adam'
-
-#--------------------FUNCTIONS----------------------#
 
 def modelTranslation(num_encoder_tokens,num_decoder_tokens):
 # We crete the model 1 encoder(lstm)/1 encoder(gru) + 1 decode (LSTM)/1 decode (gru) + 1 Dense layer + softmax
@@ -86,9 +67,9 @@ def modelTranslation(num_encoder_tokens,num_decoder_tokens):
 def trainSeq2Seq(model,encoder_input_data, decoder_input_data,decoder_target_data, encoder_dataset, decoder_input_dataset, decoder_target_dataset):
     # We load tensorboad
     # We train the model
-    LOG_PATH="./output/log"
+    log_path="./models/log"
         
-    tbCallBack = TensorBoard(log_dir=LOG_PATH, histogram_freq=0, write_graph=True, write_images=True)
+    tbCallBack = TensorBoard(log_dir=log_path, histogram_freq=0, write_graph=True, write_images=True)
     
     # Run training
 
@@ -99,8 +80,8 @@ def trainSeq2Seq(model,encoder_input_data, decoder_input_data,decoder_target_dat
     train_dataset = tf.data.Dataset.zip((train_dataset,  decoder_target_dataset))
     train_dataset = train_dataset.batch(wandb.config.batch_size)
 
-    validation_dataset = train_dataset.take(int(validation_split * len(train_dataset)))
-    train_dataset = train_dataset.skip(int(validation_split * len(train_dataset)))
+    validation_dataset = train_dataset.take(int(config.validation_split * len(train_dataset)))
+    train_dataset = train_dataset.skip(int(config.validation_split * len(train_dataset)))
 
     model.fit(train_dataset, batch_size=wandb.config.batch_size, epochs=wandb.config.epochs, validation_data=validation_dataset, callbacks=[WandbCallback()])
     
@@ -136,8 +117,8 @@ def generateInferenceModel(encoder_inputs, encoder_states,input_token_index,targ
             (i, char) for char, i in input_token_index.items())
         reverse_target_char_index = dict(
             (i, char) for char, i in target_token_index.items())
-        encoder_model.save(encoder_path)
-        decoder_model.save(decoder_path)
+        encoder_model.save(config.encoder_path)
+        decoder_model.save(config.decoder_path)
         return encoder_model,decoder_model,reverse_target_char_index
     
     elif wandb.config.cell_type == 'GRU':
@@ -158,8 +139,8 @@ def generateInferenceModel(encoder_inputs, encoder_states,input_token_index,targ
             (i, char) for char, i in input_token_index.items())
         reverse_target_char_index = dict(
             (i, char) for char, i in target_token_index.items())
-        encoder_model.save(encoder_path)
-        decoder_model.save(decoder_path)
+        encoder_model.save(config.encoder_path)
+        decoder_model.save(config.decoder_path)
         return encoder_model,decoder_model,reverse_target_char_index
     
 def saveChar2encoding(filename,input_token_index,max_encoder_seq_length,num_encoder_tokens,reverse_target_char_index,num_decoder_tokens,target_token_index):

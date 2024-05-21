@@ -1,10 +1,9 @@
 from __future__ import print_function
 import numpy as np
 import tensorflow as tf
+import config
 
-NUM_SAMPLES = 90000
 
-#--------------------FUNCTIONS----------------------#
 
 def extractChar(data_path, exchangeLanguage=False):
     # We extract the data (Sentence1 \t Sentence 2) from the anki text file
@@ -18,7 +17,7 @@ def extractChar(data_path, exchangeLanguage=False):
 
     if (exchangeLanguage==False):
 
-        for line in lines[: min(NUM_SAMPLES, len(lines) - 1)]: 
+        for line in lines[: min(config.num_samples, len(lines) - 1)]: 
             input_text, target_text, _ = line.split('\t')
             target_text = '\t' + target_text + '\n'
             input_texts.append(input_text)
@@ -34,7 +33,7 @@ def extractChar(data_path, exchangeLanguage=False):
         target_characters = sorted(list(target_characters))
 
     else:
-        for line in lines[: min(NUM_SAMPLES, len(lines) - 1)]:
+        for line in lines[: min(config.num_samples, len(lines) - 1)]:
             target_text , input_text, _ = line.split('\t')
             target_text = '\t' + target_text + '\n'
             input_texts.append(input_text)
