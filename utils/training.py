@@ -157,7 +157,6 @@ def modelTranslation(num_encoder_tokens,num_decoder_tokens):
 
 def trainSeq2Seq(model, train_loader, val_loader):
 
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
@@ -176,15 +175,23 @@ def trainSeq2Seq(model, train_loader, val_loader):
         for batch_idx, (encoder_inputs, decoder_inputs, targets) in enumerate(train_loader):
 
             encoder_inputs, decoder_inputs, targets = encoder_inputs.to(device), decoder_inputs.to(device), targets.to(device)
+            print(len(encoder_inputs),len(decoder_inputs),len(targets))
 
             optimizer.zero_grad()
             outputs = model(encoder_inputs, decoder_inputs)
-            
-            loss = criterion(outputs.view(-1, outputs.shape[-1]), targets.view(-1))
+            print(len(outputs))
+
+            #loss = criterion(outputs.view(-1, outputs.shape[-1]), targets.view(-1))
+            outputs = outputs.view(config.batch_size, -1)
+            targets = targets.view(config.batch_size,-1)
+            print(len(outputs),len(targets))
+            loss = criterion(outputs,targets)
+            print(loss)
             loss.backward()
             optimizer.step()
             
             epoch_loss += loss.item()
+            print(epoch_loss)
 
             if batch_idx % 100 == 0:
                 print(f'Epoch [{epoch+1}/{config.epochs}], Step [{batch_idx+1}/{len(train_loader)}], Loss: {loss.item():.4f}')

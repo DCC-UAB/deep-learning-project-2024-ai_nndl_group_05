@@ -65,14 +65,14 @@ def encodingChar(input_characters,target_characters,input_texts,target_texts):
     max_encoder_seq_length = max([len(txt) for txt in input_texts]) #max len d'una linia entrada
     max_decoder_seq_length = max([len(txt) for txt in target_texts]) #max len d'una linia sortida
 
-    print("#--------------data info 1---------------#")
+    """print("#--------------data info 1---------------#")
     print('Number of num_encoder_tokens:', num_encoder_tokens)
     print('Number of samples:', len(input_texts))
     print('Number of unique input tokens:', num_encoder_tokens)
     print('Number of unique output tokens:', num_decoder_tokens)
     print('Max sequence length for inputs:', max_encoder_seq_length)
     print('Max sequence length for outputs:', max_decoder_seq_length)
-    print("#----------------------------------------#\n")
+    print("#----------------------------------------#\n")"""
     
     input_token_index = dict([(char, i) for i, char in enumerate(input_characters)]) # {"a": 0, "b": 1, "?": 2}
     target_token_index = dict([(char, i) for i, char in enumerate(target_characters)])
@@ -99,11 +99,11 @@ def create_data_loader1(encoder_input_data, decoder_input_data, decoder_target_d
     decoder_input_dataset = tf.data.Dataset.from_tensor_slices(decoder_input_data)
     decoder_target_dataset = tf.data.Dataset.from_tensor_slices(decoder_target_data)
 
-    print("#--------data info 2 (tensorflow)-------#")
+    """print("#--------data info 2 (tensorflow)-------#")
     print("encoder_dataset (tf): ",len(encoder_dataset), type(encoder_dataset))
     print("decoder_input_dataset (tf): ",len(decoder_input_dataset),type(decoder_input_dataset))
     print("decoder_target_dataset (tf): ",len(decoder_target_dataset),type(decoder_target_dataset))
-    print("#---------------------------------------#")
+    print("#---------------------------------------#")"""
         
     return encoder_dataset, decoder_input_dataset, decoder_target_dataset 
 
@@ -124,7 +124,7 @@ def create_data_loader2(encoder_input_data, decoder_input_data, decoder_target_d
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=config.batch_size)
     
-    print("#-----------data info 3 (pytorch)----------#")
+    """print("#-----------data info 3 (pytorch)----------#")
     print("train_dataset",len(train_dataset),type(train_dataset))
     print("val_size",val_size)
     print("train_size",train_size)
@@ -132,7 +132,7 @@ def create_data_loader2(encoder_input_data, decoder_input_data, decoder_target_d
     print("val_dataset",len(val_dataset),type(val_dataset))
     print("train_loader:",len(train_loader),type(train_loader))
     print("val_loader:",len(val_loader),type(val_loader))
-    print("#----------------------------------------#")
+    print("#----------------------------------------#")"""
 
     return train_loader, val_loader
 
@@ -149,7 +149,7 @@ def prepareData(data_path):
     train_loader, val_loader  = create_data_loader2(encoder_input_data, decoder_input_data, decoder_target_data)
     
     
-    print("#--------------data info 4---------------#")
+    """print("#--------------data info 4---------------#")
     print("encoder_input_data:",len(encoder_input_data),type(encoder_input_data))
     print("decoder_input_data:",len(decoder_input_data),type(decoder_input_data))
     print("decoder_target_data:",len(decoder_target_data),type(decoder_target_data))
@@ -163,6 +163,6 @@ def prepareData(data_path):
     print("num_encoder_tokens:",num_encoder_tokens,type(num_encoder_tokens))
     print("num_decoder_tokens:",num_decoder_tokens,type(num_decoder_tokens))
     print("max_encoder_seq_length:",max_encoder_seq_length,type(max_encoder_seq_length))
+    print("#----------------------------------------#\n")"""
 
-    print("#----------------------------------------#\n")
     return encoder_input_data, decoder_input_data, decoder_target_data, input_token_index, target_token_index,input_texts,target_texts,num_encoder_tokens,num_decoder_tokens,max_encoder_seq_length, train_loader, val_loader
