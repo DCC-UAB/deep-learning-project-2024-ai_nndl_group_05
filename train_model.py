@@ -29,7 +29,8 @@ def create_wandb():
         # track hyperparameters and run metadata
         config=config_defaults,
         name = "Execution",
-        allow_val_change=True)
+        allow_val_change=True
+        )
 
 
 if __name__ == "__main__":
@@ -43,10 +44,11 @@ if __name__ == "__main__":
     print("-------STARTING DATA PROCESSING------------")
     print("#----------------------------------------#\n")
     
-    encoder_input_data, decoder_input_data, decoder_target_data, input_token_index, target_token_index,input_texts,target_texts,num_encoder_tokens,num_decoder_tokens,max_encoder_seq_length, encoder_dataset, decoder_input_dataset, decoder_target_dataset=prepareData(config.data_path)
+    train_loader, val_loader = prepareData(config.data_path)
     
     # Training the model
     print("\n#----------------------------------------#")
     print("-------STARTING MODEL TRAINING------------")
     print("#----------------------------------------#\n")
-    train(encoder_input_data, decoder_input_data, decoder_target_data, input_token_index, target_token_index,input_texts,target_texts,num_encoder_tokens,num_decoder_tokens,max_encoder_seq_length, encoder_dataset, decoder_input_dataset, decoder_target_dataset)
+    train(train_loader, val_loader)
+    
