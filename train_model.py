@@ -29,7 +29,8 @@ def create_wandb():
         # track hyperparameters and run metadata
         config=config_defaults,
         name = "Execution",
-        allow_val_change=True)
+        allow_val_change=True
+        )
 
 
 if __name__ == "__main__":
@@ -49,5 +50,5 @@ if __name__ == "__main__":
     print("\n#----------------------------------------#")
     print("-------STARTING MODEL TRAINING------------")
     print("#----------------------------------------#\n")
-    train(train_loader,val_loader)
+    train(train_loader, val_loader)
     

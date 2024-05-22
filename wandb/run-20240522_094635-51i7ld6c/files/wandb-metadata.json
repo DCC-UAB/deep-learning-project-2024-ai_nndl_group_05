@@ -1,0 +1,53 @@
+{
+    "os": "Windows-10-10.0.22631-SP0",
+    "python": "3.11.2",
+    "heartbeatAt": "2024-05-22T07:46:37.273502",
+    "startedAt": "2024-05-22T07:46:35.857585",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "c:\\Users\\sara0\\Desktop\\uni\\SECOND YEAR\\NN & Deep Learning\\dl project\\MachineTranslator\\train_model.py",
+    "codePathLocal": "train_model.py",
+    "codePath": "train_model.py",
+    "git": {
+        "remote": "https://github.com/saraxmartin/MachineTranslator.git",
+        "commit": "ee5a6990daefec31b445e609413a2d550ebadfaf"
+    },
+    "email": "sara.04.sm@gmail.com",
+    "root": "C:/Users/sara0/Desktop/uni/SECOND YEAR/NN & Deep Learning/dl project/MachineTranslator",
+    "host": "MSI",
+    "username": "sara0",
+    "executable": "C:\\Users\\sara0\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+    "cpu_count": 4,
+    "cpu_count_logical": 8,
+    "cpu_freq": {
+        "current": 2803.0,
+        "min": 0.0,
+        "max": 2803.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2803.0,
+            "min": 0.0,
+            "max": 2803.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 932.3974571228027,
+            "used": 384.5338134765625
+        }
+    },
+    "gpu": "GeForce MX450",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "GeForce MX450",
+            "memory_total": 2147483648
+        }
+    ],
+    "memory": {
+        "total": 15.70888900756836
+    }
+}

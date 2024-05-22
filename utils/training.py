@@ -4,23 +4,11 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #dssable info messages
 import config
 
-from keras.models import Model
-from keras.layers import Input, LSTM, Dense, GRU
-from keras.callbacks import TensorBoard
-#import _pickle as pickle
-import pickle
-import wandb
-#from wandb.keras import WandbCallback
-from wandb.integration.keras import WandbCallback
-import tensorflow as tf
 from keras.utils.vis_utils import plot_model
-#from tensorflow.keras.utils import plot_model
-
+import wandb
 import torch
 import torch.nn as nn
 import torch.optim as optim
-
-import torch
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 import wandb
@@ -145,7 +133,14 @@ def modelTranslation():
     
     return model
 
-
+def compute_accuracy(preds, y):
+    """
+    Returns accuracy per batch, i.e. if you get 8/10 right, this returns 0.8, NOT 8
+    """
+    max_preds = preds.argmax(dim = 1, keepdim = True) # get the index of the max probability
+    non_pad_elements = (y).nonzero()
+    correct = max_preds[non_pad_elements].squeeze(1).eq(y[non_pad_elements])
+    return correct.sum() / y[non_pad_elements].shape[0]
 
 def trainSeq2Seq(model, train_loader, val_loader):
 
@@ -164,47 +159,50 @@ def trainSeq2Seq(model, train_loader, val_loader):
     model.train()
     for epoch in range(config.epochs):
         epoch_loss = 0
+        epoch_acc = 0
         for batch_idx, (encoder_inputs, decoder_inputs, targets) in enumerate(train_loader):
 
             encoder_inputs, decoder_inputs, targets = encoder_inputs.to(device), decoder_inputs.to(device), targets.to(device)
 
             optimizer.zero_grad()
+            
             outputs = model(encoder_inputs, decoder_inputs)
-
-            #loss = criterion(outputs.view(-1, outputs.shape[-1]), targets.view(-1))
-            outputs = outputs.view(config.batch_size, -1)
-            targets = targets.view(config.batch_size,-1)
-
+   
             loss = criterion(outputs,targets)
+            acc = compute_accuracy(outputs, targets)
 
             loss.backward()
             optimizer.step()
             
             epoch_loss += loss.item()
+            epoch_acc += acc.item()
 
             if batch_idx % 100 == 0:
-                print(f'Epoch [{epoch+1}/{config.epochs}], Step [{batch_idx+1}/{len(train_loader)}], Loss: {loss.item():.4f}')
+                print(f'Epoch [{epoch+1}/{config.epochs}], Step [{batch_idx+1}/{len(train_loader)}],' 
+                      f'Loss: {loss.item():.4f}, Accuracy: {acc.item():.4f}')
         
         avg_epoch_loss = epoch_loss / len(train_loader)
+        avg_epoch_acc = epoch_acc / len(train_loader)
         writer.add_scalar('Loss/train', avg_epoch_loss, epoch)
-        wandb.log({'train/loss': avg_epoch_loss})
+        writer.add_scalar('Accuracy/train', avg_epoch_acc, epoch)
+        wandb.log({'train/loss': avg_epoch_loss, 'train/accuracy': avg_epoch_acc})
         
         # Validation
         model.eval()
         with torch.no_grad():
             val_loss = 0
+            #val_acc = 0
             correct = 0
             total = 0
             for encoder_inputs, decoder_inputs, targets in val_loader:
                 encoder_inputs, decoder_inputs, targets = encoder_inputs.to(device), decoder_inputs.to(device), targets.to(device)
+                
                 outputs = model(encoder_inputs, decoder_inputs)
                 
-                #loss = criterion(outputs.view(-1, outputs.shape[-1]), targets.view(-1))
-                outputs = outputs.view(config.batch_size, -1)
-                targets = targets.view(config.batch_size,-1)
                 loss = criterion(outputs,targets)
 
                 val_loss += loss.item()
+                #val_acc += acc.item()
                 
                 #_, predicted = torch.max(outputs.data, -1)
                 _, predicted = torch.max(outputs.data)
@@ -226,12 +224,11 @@ def trainSeq2Seq(model, train_loader, val_loader):
         correct = 0
         total = 0
         for encoder_inputs, decoder_inputs, targets in val_loader:
-            encoder_inputs, decoder_inputs, targets = encoder_inputs.to(device), decoder_inputs.to(device), targets.to(device)
-            outputs = model(encoder_inputs, decoder_inputs)
             
-            #loss = criterion(outputs.view(-1, outputs.shape[-1]), targets.view(-1))
-            outputs = outputs.view(config.batch_size, -1)
-            targets = targets.view(config.batch_size,-1)
+            encoder_inputs, decoder_inputs, targets = encoder_inputs.to(device), decoder_inputs.to(device), targets.to(device)
+            
+            outputs = model(encoder_inputs, decoder_inputs)
+                
             loss = criterion(outputs,targets)
 
             val_loss += loss.item()
@@ -246,8 +243,8 @@ def trainSeq2Seq(model, train_loader, val_loader):
 
     writer.close()
 
-    plot_model(model, to_file=config.full_model_path, show_shapes=True, show_layer_names=True)
-
+    plot_model(model, to_file=config.png_model_path, show_shapes=True, show_layer_names=True)
+    # Save model with torch or with onnx
 
 def generateInferenceModel():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -277,8 +274,8 @@ def generateInferenceModel():
     torch.save(encoder.state_dict(), config.encoder_path)
     torch.save(decoder.state_dict(), config.decoder_path)
 
-    plot_model(encoder, to_file=config.model_encoder_path, show_shapes=True, show_layer_names=True)
-    plot_model(decoder, to_file=config.model_decoder_path, show_shapes=True, show_layer_names=True)
+    plot_model(encoder, to_file=config.png_encoder_path, show_shapes=True, show_layer_names=True)
+    plot_model(decoder, to_file=config.png_decoder_path, show_shapes=True, show_layer_names=True)
     
 
 
