@@ -2,7 +2,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #dssable info messages
 
 import wandb
-
+import torch
 import config
 from utils.data import prepareData
 from utils.training import train
