@@ -1,13 +1,11 @@
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #dssable info messages
-
 import wandb
 import torch
+
 import config
-from utils.data import prepareData
+from utils.data import get_dataloader
 from utils.training import train
 
-
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 config_defaults = {
         "batch_size": config.batch_size,
@@ -36,19 +34,19 @@ def create_wandb():
 if __name__ == "__main__":
     
     # start a new wandb run to track this script
-    wandb.login(key="8090840539532ccc2f8ea5c1595fde6dbb57bf56")
-    create_wandb()
+    #wandb.login(key="8090840539532ccc2f8ea5c1595fde6dbb57bf56")
+    #create_wandb()
 
     # Data preprocessing
     print("\n#----------------------------------------#")
     print("-------STARTING DATA PROCESSING------------")
     print("#----------------------------------------#\n")
     
-    train_loader, val_loader = prepareData(config.data_path)
+    input_lang, output_lang, train_loader = get_dataloader()
     
     # Training the model
     print("\n#----------------------------------------#")
     print("-------STARTING MODEL TRAINING------------")
     print("#----------------------------------------#\n")
-    train(train_loader, val_loader)
+    #train(input_lang, output_lang, train_loader)
     

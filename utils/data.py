@@ -1,187 +1,197 @@
-from __future__ import print_function
-import numpy as np
-#import tensorflow as tf
-import pickle
-import config
+from __future__ import unicode_literals, print_function, division
+from io import open
+import unicodedata
+import re
+import random
+
 import torch
-from torch.utils.data import TensorDataset, DataLoader, random_split
+import torch.nn as nn
+from torch import optim
+import torch.nn.functional as F
+
+import numpy as np
+from torch.utils.data import TensorDataset, DataLoader, RandomSampler
+
+import config
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def extractChar(data_path, exchangeLanguage=False):
-    # We extract the data (Sentence1 \t Sentence 2) from the anki text file
-    input_texts = [] 
-    target_texts = []
-    input_characters = set()
-    target_characters = set()
-    #lines = open(data_path).read().split('\n')
-    with open(data_path, encoding='utf-8') as file:
-        lines = file.read().split('\n')
+SOS_token = 0
+EOS_token = 1
 
-    if (exchangeLanguage==False):
+class Lang:
+    def __init__(self, name):
+        self.name = name
+        self.word2index = {}
+        self.word2count = {}
+        self.index2word = {0: "SOS", 1: "EOS"}
+        self.n_words = 2  # Count SOS and EOS
 
-        for line in lines[: min(config.num_samples, len(lines) - 1)]: 
-            input_text, target_text, _ = line.split('\t')
-            target_text = '\t' + target_text + '\n'
-            input_texts.append(input_text)
-            target_texts.append(target_text)
-            for char in input_text:
-                if char not in input_characters:
-                    input_characters.add(char)
-            for char in target_text:
-                if char not in target_characters:
-                    target_characters.add(char)
+    def addSentence(self, sentence):
+        for word in sentence.split(' '):
+            self.addWord(word)
 
-        input_characters = sorted(list(input_characters))
-        target_characters = sorted(list(target_characters))
+    def addWord(self, word):
+        if word not in self.word2index:
+            self.word2index[word] = self.n_words
+            self.word2count[word] = 1
+            self.index2word[self.n_words] = word
+            self.n_words += 1
+        else:
+            self.word2count[word] += 1
 
+# Turn a Unicode string to plain ASCII, thanks to
+# https://stackoverflow.com/a/518232/2809427
+def unicodeToAscii(s):
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', s)
+        if unicodedata.category(c) != 'Mn'
+    )
+
+# Lowercase, trim, and remove non-letter characters
+def normalizeString(s):
+    s = unicodeToAscii(s.lower().strip())
+    s = re.sub(r"([.!?])", r" \1", s)
+    s = re.sub(r"[^a-zA-Z!?]+", r" ", s)
+    return s.strip()
+
+
+# Read spa-eng file
+def readLangs(lang1, lang2, reverse=False):
+    print("Reading lines...")
+
+    # Read the file and split into lines
+    lines = open(config.data_path, encoding='utf-8').\
+        read().strip().split('\n')
+
+    # Split every line into pairs and normalize
+    pairs = [[normalizeString(s) for s in l.split('\t')] for l in lines]
+    pairs = [pair[:2] for pair in pairs]
+
+    # Reverse pairs, make Lang instances
+    if reverse:
+        pairs = [list(reversed(p)) for p in pairs]
+        input_lang = Lang(lang2)
+        output_lang = Lang(lang1)
     else:
-        for line in lines[: min(config.num_samples, len(lines) - 1)]:
-            target_text , input_text, _ = line.split('\t')
-            target_text = '\t' + target_text + '\n'
-            input_texts.append(input_text)
-            target_texts.append(target_text)
-            for char in input_text:
-                if char not in input_characters:
-                    input_characters.add(char)
-            for char in target_text:
-                if char not in target_characters:
-                    target_characters.add(char)
+        input_lang = Lang(lang1)
+        output_lang = Lang(lang2)
 
-        input_characters = sorted(list(input_characters))
-        target_characters = sorted(list(target_characters))
+    return input_lang, output_lang, pairs
 
-    return input_characters,target_characters,input_texts,target_texts
+
+# Trim examples to sentences of max 10 words
+
+"""eng_prefixes = (
+    "i am ", "i m ",
+    "he is", "he s ",
+    "she is", "she s ",
+    "you are", "you re ",
+    "we are", "we re ",
+    "they are", "they re "
+)"""
+
+def filterPair(p):
+    return len(p[0].split(' ')) < config.max_length and \
+        len(p[1].split(' ')) < config.max_length #and \
+        #p[1].startswith(eng_prefixes)
+
+
+def filterPairs(pairs):
+    return [pair for pair in pairs if filterPair(pair)]
+
+
+# FUNCTIONS TO GET DATA LOADER
+def indexesFromSentence(lang, sentence):
+    return [lang.word2index[word] for word in sentence.split(' ')]
+
+
+def prepareData(lang1, lang2, reverse=False):
+    input_lang, output_lang, pairs = readLangs(lang1, lang2, reverse)
+    print(f"Read {len(pairs)} sentence pairs")
+    pairs = filterPairs(pairs) #borrar
+    print(f"Trimmed to {len(pairs)} sentence pairs") #borrar
+    print("Counting words...")
+    for pair in pairs:
+        input_lang.addSentence(pair[0])
+        output_lang.addSentence(pair[1])
+    print("Counted words:")
+    print(input_lang.name, input_lang.n_words)
+    print(output_lang.name, output_lang.n_words)
     
-def saveChar2encoding(filename,input_token_index,max_encoder_seq_length,num_encoder_tokens,reverse_target_char_index,num_decoder_tokens,target_token_index):
-    f = open(filename, "wb")
-    pickle.dump(input_token_index, f)
-    pickle.dump(max_encoder_seq_length, f)
-    pickle.dump(num_encoder_tokens, f)
-    pickle.dump(reverse_target_char_index, f)
-    
-    pickle.dump(num_decoder_tokens, f)
-    
-    pickle.dump(target_token_index, f)
-    f.close()    
-    
-def encodingChar(input_characters,target_characters,input_texts,target_texts):
-    # We encode the dataset in a format that can be used by our Seq2Seq model (hot encoding).
-    # Important: this project can be used for different language that do not have the same number of letter in their alphabet.
-    # Important2: the decoder_target_data is ahead of decoder_input_data by one timestep (decoder = LSTM cell).
-    # 1. We get the number of letter in language 1 and 2 (num_encoder_tokens/num_decoder_tokens)
-    # 2. We create a dictonary for both language
-    # 3. We store their encoding and return them and their respective dictonary
-    
-    num_encoder_tokens = len(input_characters) #numero de lletres diferents llengua entrada
-    num_decoder_tokens = len(target_characters) #numero de lletres diferents llengua sortida
-    max_encoder_seq_length = max([len(txt) for txt in input_texts]) #max len d'una linia entrada
-    max_decoder_seq_length = max([len(txt) for txt in target_texts]) #max len d'una linia sortida
+    print("Random pair: ",random.choice(pairs))
 
-    """print("#--------------data info 1---------------#")
-    print('Number of samples:', len(input_texts))
-    print('Number of unique input tokens:', num_encoder_tokens)
-    print('Number of unique output tokens:', num_decoder_tokens)
-    print('Max sequence length for inputs:', max_encoder_seq_length)
-    print('Max sequence length for outputs:', max_decoder_seq_length)
-    print("#----------------------------------------#\n")"""
-    
-    input_token_index = dict([(char, i) for i, char in enumerate(input_characters)]) # {"a": 0, "b": 1, "?": 2}
-    target_token_index = dict([(char, i) for i, char in enumerate(target_characters)])
+    return input_lang, output_lang, pairs
 
-    encoder_input_data = np.zeros((len(input_texts), max_encoder_seq_length, num_encoder_tokens),dtype='float32')
-    decoder_input_data = np.zeros((len(input_texts), max_decoder_seq_length, num_decoder_tokens),dtype='float32')
-    decoder_target_data = np.zeros((len(input_texts), max_decoder_seq_length, num_decoder_tokens),dtype='float32')
+# MAIN
 
-    for i, (input_text, target_text) in enumerate(zip(input_texts, target_texts)):
-        for t, char in enumerate(input_text):
-            encoder_input_data[i, t, input_token_index[char]] = 1.
-        for t, char in enumerate(target_text):
-            decoder_input_data[i, t, target_token_index[char]] = 1.
-            if t > 0:
-                decoder_target_data[i, t - 1, target_token_index[char]] = 1.
+def get_dataloader():
+    input_lang, output_lang, pairs = prepareData(config.input_language, 
+                                                 config.output_language, 
+                                                 reverse=False)
 
-    # Reverse-lookup token index to decode sequences back to something readable
-    reverse_input_char_index = {i: char for char, i in input_token_index.items()}
-    reverse_target_char_index = {i: char for char, i in target_token_index.items()}
+    # Transform to numerical data: one hot vector 
+    n = len(pairs)
+    input_ids = np.zeros((n, config.max_length), dtype=np.int32) #inputs_ids[0]=[0 0 0 0 0 0 0 0 0 0], len[0]=max_length, len=119635, type=<class 'numpy.ndarray'>
+    print("input_ids",input_ids[0],len(input_ids),type(input_ids))
+    target_ids = np.zeros((n, config.max_length), dtype=np.int32) #target_ids[0]=[0 0 0 0 0 0 0 0 0 0], len[0]=max_length, len=119635, type=<class 'numpy.ndarray'>
+    print("target_ids",target_ids[0],len(target_ids),type(target_ids))
 
-    # we save the object to convert the sequence to encoding  and encoding to sequence
-    # our model is made for being used with different langages that do not have the same number of letters and the same alphabet
-    saveChar2encoding("./models/char2encoding.pkl",input_token_index,max_encoder_seq_length,num_encoder_tokens,reverse_target_char_index,num_decoder_tokens,target_token_index)
+    for idx, (inp, tgt) in enumerate(pairs):
+        #inp = "thomas edison invented the light bulb"
+        #tgt = "thomas edison invento la bombilla"
+        inp_ids = indexesFromSentence(input_lang, inp) #thomas edison invented the light bulb -> [10615, 8633, 3602, 827, 1422, 4877]
+        tgt_ids = indexesFromSentence(output_lang, tgt) #thomas edison invento la bombilla -> [20828, 16967, 7086, 150, 5906]
+        inp_ids.append(EOS_token) #[10615, 8633, 3602, 827, 1422, 4877, 1]
+        tgt_ids.append(EOS_token) #[20828, 16967, 7086, 150, 5906, 1]
+        input_ids[idx, :len(inp_ids)] = inp_ids #input_ids[idx] = [10615  8633  3602   827  1422  4877     1     0     0     0]
+        target_ids[idx, :len(tgt_ids)] = tgt_ids #target_ids[idx] = [20828 16967  7086   150  5906     1     0     0     0     0]
 
-    return encoder_input_data, decoder_input_data, decoder_target_data
+    train_data = TensorDataset(torch.LongTensor(input_ids).to(device),
+                               torch.LongTensor(target_ids).to(device))
+    print("Train data tensor example: ",train_data[100000]) 
+    # (tensor([ 236,  178, 2813,  663,  475,  224,  157,    1,    0,    0]), tensor([3938, 1636, 5700,   66, 2880,  460,  361,    1,    0,    0]))
+    train_sampler = RandomSampler(train_data)
+    train_loader = DataLoader(train_data, sampler=train_sampler, batch_size=config.batch_size)
 
-
-
-"""def create_data_loader1(encoder_input_data, decoder_input_data, decoder_target_data):
-    # Create TensorFlow datasets from the encoded data arrays
-    encoder_dataset = tf.data.Dataset.from_tensor_slices(encoder_input_data)
-    decoder_input_dataset = tf.data.Dataset.from_tensor_slices(decoder_input_data)
-    decoder_target_dataset = tf.data.Dataset.from_tensor_slices(decoder_target_data)
-
-    print("#--------data info 2 (tensorflow)-------#")
-    print("encoder_dataset (tf): ",len(encoder_dataset), type(encoder_dataset))
-    print("decoder_input_dataset (tf): ",len(decoder_input_dataset),type(decoder_input_dataset))
-    print("decoder_target_dataset (tf): ",len(decoder_target_dataset),type(decoder_target_dataset))
-    print("#---------------------------------------#")
+    """for inp, tgt in train_loader:
+        print(inp) # tensor([[inp_ids]*batch_size])
+        print(tgt) # tensor([[inp_ids]*batch_size])
         
-    return encoder_dataset, decoder_input_dataset, decoder_target_dataset """
-
-def create_data_loader(encoder_input_data, decoder_input_data, decoder_target_data):
-    # Convert numpy arrays to PyTorch tensors if they are numpy arrays
-    if isinstance(encoder_input_data, np.ndarray):
-        encoder_input_data = torch.tensor(encoder_input_data)
-    if isinstance(decoder_input_data, np.ndarray):
-        decoder_input_data = torch.tensor(decoder_input_data)
-    if isinstance(decoder_target_data, np.ndarray):
-        decoder_target_data = torch.tensor(decoder_target_data)
+        Example: 
+        tensor([[   19,   112,  1914,   282,   779,     1,     0,     0,     0,     0],
+        [  164,    18,   123,   621,   256,   282,  1190,    20,     7,     1],
+        [   23,   312,   282,   150,    88,  4234,   256,   735,   410,     1],
+        [   71,    48,     1,     0,     0,     0,     0,     0,     0,     0],
+        [   71,  2030,   886,   174,   827,  6280,     1,     0,     0,     0],
+        [   71,  7930,   223,  7931,     1,     0,     0,     0,     0,     0],
+        [   71,  9894,   886,   282,    13,   269,   827,  2392,     1,     0],
+        [   23,   159,   138,  1948,     6,  1749,    44,   930,  2086,     1],
+        [   65,   169,   147,   114,   152,   799,  3875,     1,     0,     0],
+        [   71,   906, 11093,   366,   511,   568,     1,     0,     0,     0],
+        [  314,  1747,   174,  2189,     1,     0,     0,     0,     0,     0],
+        [  320,   123,    11,    46,   364,   152,  1949,     7,     1,     0],
+        [   23,   499,   308,   282,    61,   282,   711,     1,     0,     0],
+        [   23,    59,   134,   194,     1,     0,     0,     0,     0,     0],
+        [  537,   880,  1119,     1,     0,     0,     0,     0,     0,     0],
+        [  130,    46,  1306,   880,   676,     1,     0,     0,     0,     0],
+        [  379,   411,  1150,  4864, 10488,    44,   152,  2443,     1,     0],
+        [  543,  1948,   619,    29,   808,     1,     0,     0,     0,     0],
+        [   23,    97,   663,   123,    20,   152,  2823,     1,     0,     0],
+        [  123,   323,   200,   328,   146,   147,   123,     7,     1,     0],
+        [   23,   105,   301,   123,   138,   918,     1,     0,     0,     0],
+        [  236,   448,   228,   257,    46,     1,     0,     0,     0,     0],
+        [   23,   687,   138,  5686,   366,  2533,     1,     0,     0,     0],
+        [ 3127,   827,  7246, 11192,   286,  2371,     1,     0,     0,     0],
+        [   71,  1735,   147,   495,   282,   148,   883,  2093,     1,     0],
+        [   42,  5258,   285,  1261,   319,   410,   663,   223,   825,     1],
+        [    6,   906,   827,   975,  1321,   282,     7,     1,     0,     0],
+        [   65,   730,   370,   560,  4115,   314,   918,   138,  3764,     1],
+        [  411,   123,    88,   366,   880,   961,     7,     1,     0,     0],
+        [  543,  2605,   411,   549,     1,     0,     0,     0,     0,     0],
+        [   23,    59,   156,   282,    14,   560,    90,   999,     1,     0],
+        [  236,   480,   159,  1906,  1070,  1307,     1,     0,     0,     0]])
+        """
     
-    # Create datasets and data loaders
-    train_dataset = TensorDataset(encoder_input_data, decoder_input_data, decoder_target_data)
-    val_size = int(config.validation_split * len(train_dataset))
-    train_size = len(train_dataset) - val_size
-    train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
-    train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=config.batch_size)
-    
-    """print("#------------data info 2----------------#")
-    print("train_dataset",len(train_dataset),type(train_dataset))
-    print("val_size",val_size)
-    print("train_size",train_size)
-    print("train_dataset",len(train_dataset),type(train_dataset))
-    print("val_dataset",len(val_dataset),type(val_dataset))
-    print("train_loader:",len(train_loader),type(train_loader))
-    print("val_loader:",len(val_loader),type(val_loader))
-    print("#----------------------------------------#")"""
-
-    return train_loader, val_loader
-
-
-
-#--------------------MAIN----------------------#
-
-def prepareData(data_path):
-
-    input_characters,target_characters,input_texts,target_texts = extractChar(data_path)
-
-    encoder_input_data, decoder_input_data, decoder_target_data = encodingChar(input_characters,target_characters,input_texts,target_texts)
-        
-    train_loader, val_loader  = create_data_loader(encoder_input_data, decoder_input_data, decoder_target_data)
-    
-    
-    """print("#--------------data info 4---------------#")
-    print("encoder_input_data:",len(encoder_input_data),type(encoder_input_data))
-    print("decoder_input_data:",len(decoder_input_data),type(decoder_input_data))
-    print("decoder_target_data:",len(decoder_target_data),type(decoder_target_data))
-
-    print("input_token_index:",len(input_token_index),type(input_token_index))
-    print("target_token_index:",len(target_token_index),type(target_token_index))
-
-    print("input_texts:",len(input_texts),type(input_texts))
-    print("target_texts:",len(target_texts),type(target_texts))
-
-    print("num_encoder_tokens:",num_encoder_tokens,type(num_encoder_tokens))
-    print("num_decoder_tokens:",num_decoder_tokens,type(num_decoder_tokens))
-    print("max_encoder_seq_length:",max_encoder_seq_length,type(max_encoder_seq_length))
-    print("#----------------------------------------#\n")"""
-
-    return train_loader, val_loader
+    return input_lang, output_lang, train_loader

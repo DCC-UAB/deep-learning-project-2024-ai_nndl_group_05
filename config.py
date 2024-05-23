@@ -3,9 +3,14 @@
 #-------------------------------------------#
 
 language = "spa-eng"
-batch_size = 128  # Batch size for training.
-epochs = 2  # Number of epochs to train for.
-latent_dim = 256 #1024 # Latent dimensionality of the encoding space.
+input_language = 'eng'
+output_language = 'spa'
+
+max_length = 10
+
+batch_size = 32  # Batch size for training.
+epochs = 28  # Number of epochs to train for.
+latent_dim = 128 #1024 # Latent dimensionality of the encoding space.
 num_samples =  90000 # Number of samples to train on.
 input_dim = 81 #num_encoder_tokens - number of unique char of language 1
 output_dim = 99 #num_decoder_tokens - number of unique char of language 2
@@ -16,6 +21,7 @@ ltsm_layers = 1
 dropouts = 0
 opt = 'RMSprop' #'adam'
 name = "Execution"
+
 
 # Path to the data txt file on disk.
 path = f'{language}/{cell_type}'
