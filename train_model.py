@@ -48,5 +48,5 @@ if __name__ == "__main__":
     print("\n#----------------------------------------#")
     print("-------STARTING MODEL TRAINING------------")
     print("#----------------------------------------#\n")
-    #train(input_lang, output_lang, train_loader)
+    train(input_lang, output_lang, train_loader)
     

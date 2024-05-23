@@ -89,7 +89,7 @@ def train_epoch(dataloader, encoder, decoder, encoder_optimizer,
           decoder_optimizer, criterion):
 
     total_loss = 0
-    for data in dataloader:
+    for batch_idx, data in enumerate(dataloader):
         input_tensor, target_tensor = data
 
         encoder_optimizer.zero_grad()
@@ -109,34 +109,54 @@ def train_epoch(dataloader, encoder, decoder, encoder_optimizer,
 
         total_loss += loss.item()
 
+        if batch_idx % config.batch_size == 0:
+                #print(f'Epoch [{epoch+1}/{config.epochs}], Step [{batch_idx+1}/{len(train_loader)}],' 
+                #      f'Loss: {loss.item():.4f}, Accuracy: {acc.item():.4f}')
+                print(f'Step [{batch_idx+1}/{len(dataloader)}],' 
+                      f'Loss: {loss.item():.4f}')
+
     return total_loss / len(dataloader)
 
-def trainSeq2Seq(train_dataloader, encoder, decoder, n_epochs, learning_rate=0.001,
-               print_every=100, plot_every=100):
+def trainSeq2Seq(train_dataloader, encoder, decoder):
     start = time.time()
     plot_losses = []
+    print_every = 5
     print_loss_total = 0  # Reset every print_every
     plot_loss_total = 0  # Reset every plot_every
 
-    encoder_optimizer = optim.Adam(encoder.parameters(), lr=learning_rate)
-    decoder_optimizer = optim.Adam(decoder.parameters(), lr=learning_rate)
-    criterion = nn.NLLLoss()
+    # Define optimizer and criterion
+    encoder_optimizer = getattr(torch.optim, config.opt)(encoder.parameters(), lr=config.learning_rate)
+    print("Encoder optimizer:",encoder_optimizer)
+    #encoder_optimizer = optim.Adam(encoder.parameters(), lr=config.learning_rate)
+    decoder_optimizer = getattr(torch.optim, config.opt)(decoder.parameters(), lr=config.learning_rate)
+    print("Decoder optimizer:",decoder_optimizer)
+    #decoder_optimizer = optim.Adam(decoder.parameters(), lr=config.learning_rate)
+    
+    if config.criterion == 'NLLLoss':
+        criterion = nn.NLLLoss()
+    elif config.criterion == 'CrossEntropyLoss':
+        criterion = nn.CrossEntropyLoss()
+    print(criterion)
 
-    for epoch in range(1, n_epochs + 1):
+    for epoch in range(1, config.epochs + 1):
+        print("hola")
         loss = train_epoch(train_dataloader, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion)
+        print("adios")
         print_loss_total += loss
         plot_loss_total += loss
 
-        if epoch % print_every == 0:
+        if epoch % print_every == 0: # Print every X epochs
             print_loss_avg = print_loss_total / print_every
             print_loss_total = 0
-            print('%s (%d %d%%) %.4f' % (timeSince(start, epoch / n_epochs),
-                                        epoch, epoch / n_epochs * 100, print_loss_avg))
+            print('%s (%d %d%%) %.4f' % (timeSince(start, epoch / config.epochs),
+                                        epoch, epoch / config.epochs * 100, print_loss_avg))
 
-        if epoch % plot_every == 0:
-            plot_loss_avg = plot_loss_total / plot_every
+        if epoch % 100 == 0: # Plot every 100
+            plot_loss_avg = plot_loss_total / print_every
             plot_losses.append(plot_loss_avg)
             plot_loss_total = 0
+        
+        print("Epoch:",epoch)
 
     #showPlot(plot_losses)
 
@@ -154,6 +174,7 @@ def tensorsFromPair(pair, input_lang, output_lang):
     input_tensor = tensorFromSentence(input_lang, pair[0])
     target_tensor = tensorFromSentence(output_lang, pair[1])
     return (input_tensor, target_tensor)
+
 def evaluate(encoder, decoder, sentence, input_lang, output_lang):
     with torch.no_grad():
         input_tensor = tensorFromSentence(input_lang, sentence)
@@ -187,8 +208,10 @@ def evaluateRandomly(encoder, decoder, n=10):
 def train(input_lang, output_lang, train_loader):
     encoder = EncoderRNN(input_lang.n_words, config.latent_dim).to(device)
     decoder = DecoderRNN(config.latent_dim, output_lang.n_words).to(device)
+    print("Encoder and decoder created.")
 
-    trainSeq2Seq(train_loader, encoder, decoder, config.epochs, print_every=5, plot_every=5)
+    trainSeq2Seq(train_loader, encoder, decoder)
+    print("Model trained successfully.")
 
     """encoder.eval()
     decoder.eval()
