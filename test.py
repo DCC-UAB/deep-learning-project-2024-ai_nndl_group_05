@@ -5,7 +5,7 @@ import pickle
 import torch.nn as nn
 import torch
 from utils.training import EncoderRNN, DecoderRNN
-from utils.data import get_dataloader, indexesFromSentence
+from utils.data import get_dataloader, normalizeString
 
 #first we will load the model, both the encoder, and the decoder
 def loadEncoderDecoderModel():
@@ -48,6 +48,7 @@ if __name__ == "__main__":
     #test(input("Enter a sentence to translate: "))
     input_lang, output_lang, train_loader, val_loader, test_loader = get_dataloader()
     sentence = "who am i"
+    sentence = normalizeString(sentence)
     encoder,decoder = loadEncoderDecoderModel()
     output_translation = test(sentence, encoder, decoder, input_lang, output_lang)
     print('-')
