@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from torch import optim
 import torch.nn.functional as F
+#from torchviz import make_dot
 
 import time
 import math
@@ -32,8 +33,7 @@ def timeSince(since, percent):
 
 
 
-
-# ENCODERS / DECODES
+# ENCODER / DECODER
 class EncoderRNN(nn.Module):
     def __init__(self, input_size, hidden_size, dropout_p=0.1):
         super(EncoderRNN, self).__init__()
@@ -85,12 +85,14 @@ class DecoderRNN(nn.Module):
         return output, hidden
     
 
+# TRAINING 
 def train_epoch(dataloader, encoder, decoder, encoder_optimizer,
           decoder_optimizer, criterion):
 
     total_loss = 0
     for batch_idx, data in enumerate(dataloader):
         input_tensor, target_tensor = data
+        input_tensor.to(device), target_tensor.to(device)
 
         encoder_optimizer.zero_grad()
         decoder_optimizer.zero_grad()
@@ -112,56 +114,144 @@ def train_epoch(dataloader, encoder, decoder, encoder_optimizer,
         if batch_idx % config.batch_size == 0:
                 #print(f'Epoch [{epoch+1}/{config.epochs}], Step [{batch_idx+1}/{len(train_loader)}],' 
                 #      f'Loss: {loss.item():.4f}, Accuracy: {acc.item():.4f}')
-                print(f'Step [{batch_idx+1}/{len(dataloader)}],' 
-                      f'Loss: {loss.item():.4f}')
+                print(f'    Step [{batch_idx+1}/{len(dataloader)}], ' 
+                      f' Loss: {loss.item():.4f}, '
+                      f' Accuracy: ')
 
     return total_loss / len(dataloader)
 
-def trainSeq2Seq(train_dataloader, encoder, decoder):
+
+# VALIDATION
+def get_words(input_lang, output_lang, 
+              input_tensor, decoded_outputs, target_tensor):
+
+    def get_list_words(lang, tensor):
+
+        print(len(tensor))
+
+        _, topi = tensor.topk(1)
+        ids = topi.squeeze()
+        print("ids:",ids)
+        words = []
+        for idx in ids:
+            print(idx)
+            if idx.item() == EOS_token:
+                words.append('<EOS>')
+                break
+            words.append(lang.index2word[idx.item()])
+        print(words)
+        return words
+
+    input_words = get_list_words(input_lang, input_tensor)
+    decoded_words = get_list_words(output_lang, decoded_outputs)
+    target_words = get_list_words(output_lang, target_tensor)
+
+    return input_words, decoded_words, target_words
+
+def val_epoch(dataloader, encoder, decoder, criterion,
+              input_lang, output_lang):
+    
+    total_loss = 0
+
+    for batch_idx, data in enumerate(dataloader):
+        
+        input_tensor, target_tensor = data
+        input_tensor.to(device), target_tensor.to(device)
+
+        encoder_outputs, encoder_hidden = encoder(input_tensor)
+        decoder_outputs, _, _ = decoder(encoder_outputs, encoder_hidden, target_tensor)
+
+        loss = criterion(
+            decoder_outputs.view(-1, decoder_outputs.size(-1)),
+            target_tensor.view(-1)
+        )
+
+        total_loss += loss.item()
+
+        if batch_idx % config.batch_size == 0:
+            print(f'        Step [{batch_idx+1}/{len(dataloader)}], ' 
+                  f' Loss: {loss.item():.4f}, '
+                  f' Accuracy: ')
+
+            # Get words        
+            input_words, decoded_words, target_words = get_words(input_lang, output_lang, 
+                                                                input_tensor, decoder_outputs, target_tensor)
+            
+            print('  Decoded Translations:')
+            print(f'     {input_lang.name}: {input_words}')
+            print(f'     {output_lang.name} translation: {decoded_words}')
+            print(f'     {output_lang.name} ground truth: {target_words}')
+
+    return total_loss / len(dataloader)
+
+
+def trainSeq2Seq(train_loader, val_loader, encoder, decoder,
+                 input_lang, output_lang):
+    
     start = time.time()
-    plot_losses = []
-    print_every = 5
-    print_loss_total = 0  # Reset every print_every
-    plot_loss_total = 0  # Reset every plot_every
+    
+    total_losses = []
+    total_acc = []
 
     # Define optimizer and criterion
     encoder_optimizer = getattr(torch.optim, config.opt)(encoder.parameters(), lr=config.learning_rate)
     print("Encoder optimizer:",encoder_optimizer)
-    #encoder_optimizer = optim.Adam(encoder.parameters(), lr=config.learning_rate)
+
     decoder_optimizer = getattr(torch.optim, config.opt)(decoder.parameters(), lr=config.learning_rate)
     print("Decoder optimizer:",decoder_optimizer)
-    #decoder_optimizer = optim.Adam(decoder.parameters(), lr=config.learning_rate)
     
     if config.criterion == 'NLLLoss':
         criterion = nn.NLLLoss()
     elif config.criterion == 'CrossEntropyLoss':
         criterion = nn.CrossEntropyLoss()
-    print(criterion)
+    print("Loss function: ", criterion)
+
+    # Training
+    encoder.train()
+    decoder.train()
 
     for epoch in range(1, config.epochs + 1):
-        print("hola")
-        loss = train_epoch(train_dataloader, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion)
-        print("adios")
-        print_loss_total += loss
-        plot_loss_total += loss
 
-        if epoch % print_every == 0: # Print every X epochs
-            print_loss_avg = print_loss_total / print_every
-            print_loss_total = 0
-            print('%s (%d %d%%) %.4f' % (timeSince(start, epoch / config.epochs),
-                                        epoch, epoch / config.epochs * 100, print_loss_avg))
+        print("\nEpoch:",epoch)
 
-        if epoch % 100 == 0: # Plot every 100
-            plot_loss_avg = plot_loss_total / print_every
-            plot_losses.append(plot_loss_avg)
-            plot_loss_total = 0
+        loss = train_epoch(train_loader, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion)
+        #acc = ...
+
+        total_losses += loss
+        #total_acc += acc
+
+        print('%s (%d %d%%) %.4f' % (timeSince(start, epoch / config.epochs),
+                                    epoch, epoch / config.epochs * 100, loss))
+
+        #wandb.log({'epoch': epoch, 'train/loss': avg_epoch_loss, 'train/accuracy': avg_epoch_acc})
+
+        # Validation
+        encoder.eval()
+        decoder.eval()
+
+        with torch.no_grad():
+
+            print(f'\n   Validation: epoch {epoch}')
+
+            val_loss = 0
+            #val_acc = 0
+            correct = 0
+            total = 0
+            
+            loss = val_epoch(val_loader, encoder, decoder, criterion, input_lang, output_lang)
+                
+            avg_val_loss = val_loss / len(val_loader)
+            #accuracy = correct / total
+
+            #wandb.log({'epoch': epoch, 'validation/loss': avg_val_loss, 'validation/accuracy': accuracy})
         
-        print("Epoch:",epoch)
-
+        encoder.train()
+        decoder.train
     #showPlot(plot_losses)
 
-"""# EVALUATE FUNCTIONS
-def indexesFromSentence(lang, sentence):
+
+# EVALUATE FUNCTIONS
+"""def indexesFromSentence(lang, sentence):
     return [lang.word2index[word] for word in sentence.split(' ')]
 
 def tensorFromSentence(lang, sentence):
@@ -201,16 +291,23 @@ def evaluateRandomly(encoder, decoder, n=10):
         output_words, _ = evaluate(encoder, decoder, pair[0], input_lang, output_lang)
         output_sentence = ' '.join(output_words)
         print('<', output_sentence)
-        print('')
-"""
+        print('')"""
+
+
 
 # MAIN
-def train(input_lang, output_lang, train_loader):
+def train(input_lang, output_lang, train_loader, val_loader):
+    # Create encoder and decoder
     encoder = EncoderRNN(input_lang.n_words, config.latent_dim).to(device)
     decoder = DecoderRNN(config.latent_dim, output_lang.n_words).to(device)
+    # Save models
+    torch.save(encoder.state_dict(), config.encoder_path)
+    torch.save(decoder.state_dict(), config.decoder_path)
+
     print("Encoder and decoder created.")
 
-    trainSeq2Seq(train_loader, encoder, decoder)
+    # Train the decoder and encoder
+    trainSeq2Seq(train_loader, val_loader, encoder, decoder, input_lang, output_lang)
     print("Model trained successfully.")
 
     """encoder.eval()

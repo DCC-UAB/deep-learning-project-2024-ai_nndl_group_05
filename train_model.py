@@ -42,11 +42,11 @@ if __name__ == "__main__":
     print("-------STARTING DATA PROCESSING------------")
     print("#----------------------------------------#\n")
     
-    input_lang, output_lang, train_loader = get_dataloader()
+    input_lang, output_lang, train_loader, val_loader, test_loader = get_dataloader()
     
     # Training the model
     print("\n#----------------------------------------#")
     print("-------STARTING MODEL TRAINING------------")
     print("#----------------------------------------#\n")
-    train(input_lang, output_lang, train_loader)
+    train(input_lang, output_lang, train_loader, val_loader)
     

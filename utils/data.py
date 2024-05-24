@@ -5,12 +5,8 @@ import re
 import random
 
 import torch
-import torch.nn as nn
-from torch import optim
-import torch.nn.functional as F
-
 import numpy as np
-from torch.utils.data import TensorDataset, DataLoader, RandomSampler
+from torch.utils.data import TensorDataset, DataLoader, RandomSampler, random_split
 
 import config
 
@@ -134,9 +130,7 @@ def get_dataloader():
     # Transform to numerical data: one hot vector 
     n = len(pairs)
     input_ids = np.zeros((n, config.max_length), dtype=np.int32) #inputs_ids[0]=[0 0 0 0 0 0 0 0 0 0], len[0]=max_length, len=119635, type=<class 'numpy.ndarray'>
-    print("input_ids",input_ids[0],len(input_ids),type(input_ids))
     target_ids = np.zeros((n, config.max_length), dtype=np.int32) #target_ids[0]=[0 0 0 0 0 0 0 0 0 0], len[0]=max_length, len=119635, type=<class 'numpy.ndarray'>
-    print("target_ids",target_ids[0],len(target_ids),type(target_ids))
 
     for idx, (inp, tgt) in enumerate(pairs):
         #inp = "thomas edison invented the light bulb"
@@ -148,12 +142,23 @@ def get_dataloader():
         input_ids[idx, :len(inp_ids)] = inp_ids #input_ids[idx] = [10615  8633  3602   827  1422  4877     1     0     0     0]
         target_ids[idx, :len(tgt_ids)] = tgt_ids #target_ids[idx] = [20828 16967  7086   150  5906     1     0     0     0     0]
 
-    train_data = TensorDataset(torch.LongTensor(input_ids).to(device),
-                               torch.LongTensor(target_ids).to(device))
-    print("Train data tensor example: ",train_data[100000]) 
+    data = TensorDataset(torch.LongTensor(input_ids).to(device),
+                        torch.LongTensor(target_ids).to(device))
+    print("Train data tensor example: ",data[100000]) 
     # (tensor([ 236,  178, 2813,  663,  475,  224,  157,    1,    0,    0]), tensor([3938, 1636, 5700,   66, 2880,  460,  361,    1,    0,    0]))
-    train_sampler = RandomSampler(train_data)
-    train_loader = DataLoader(train_data, sampler=train_sampler, batch_size=config.batch_size)
+    
+    # Create dataloaders
+    #train_sampler = RandomSampler(train_data) #train_data = data
+    #train_loader = DataLoader(train_data, sampler=train_sampler, batch_size=config.batch_size)
+    val_size = int(config.validation_split * len(data))
+    test_size = int(config.test_split * len(data))
+    train_size = len(data) - val_size - test_size
+
+    train_dataset, val_dataset, test_dataset = random_split(data, [train_size, val_size, test_size])
+    
+    train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=config.batch_size)
+    test_loader = DataLoader(test_dataset, batch_size=config.batch_size)
 
     """for inp, tgt in train_loader:
         print(inp) # tensor([[inp_ids]*batch_size])
@@ -194,4 +199,4 @@ def get_dataloader():
         [  236,   480,   159,  1906,  1070,  1307,     1,     0,     0,     0]])
         """
     
-    return input_lang, output_lang, train_loader
+    return input_lang, output_lang, train_loader, val_loader, test_loader

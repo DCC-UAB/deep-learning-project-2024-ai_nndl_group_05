@@ -8,19 +8,22 @@ output_language = 'spa'
 
 max_length = 10
 
-batch_size = 32  # Batch size for training.
-epochs = 28  # Number of epochs to train for.
+batch_size = 64  # Batch size for training.
+epochs = 1  # Number of epochs to train for.
 latent_dim = 128 #1024 # Latent dimensionality of the encoding space.
 num_samples =  90000 # Number of samples to train on.
 input_dim = 81 #num_encoder_tokens - number of unique char of language 1
 output_dim = 99 #num_decoder_tokens - number of unique char of language 2
+
 validation_split = 0.2
+test_split = 0.2
+
 learning_rate = 0.001 #0.0001
-cell_type = 'LSTM' #'GRU'
+cell_type = 'GRU' #'LSTM'
 criterion = 'NLLLoss' #'CrossEntropyLoss'
 ltsm_layers = 1
 dropouts = 0
-opt = 'RMSprop' #'adam'
+opt = 'Adam' #'RMSprop'
 name = "Execution"
 
 
