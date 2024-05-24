@@ -5,7 +5,7 @@ import pickle
 import torch.nn as nn
 import torch
 from utils.training import EncoderRNN, DecoderRNN
-from utils.data import get_dataloader
+from utils.data import get_dataloader, indexesFromSentence
 
 #first we will load the model, both the encoder, and the decoder
 def loadEncoderDecoderModel():
@@ -15,36 +15,40 @@ def loadEncoderDecoderModel():
     decoder.load_state_dict(torch.load(config.decoder_path))
     return encoder, decoder
 
-def test(sentence):
+def test(sentence,encoder, decoder, input_lang, output_lang, max_length=config.max_length):
     max_length  = config.max_length
     with torch.no_grad():
-    input_tensor = tensorFromSentence(input_lang, input_sentence)
-    input_length = input_tensor.size(0)
+        input_tensor = indexesFromSentences(input_lang, sentence)
+        input_length = input_tensor.size(0)
+        encoder.to('cuda')
+        decoder.to('cuda')
 
-    encoder_outputs, encoder_hidden = encoder(input_tensor)
+        encoder_outputs, encoder_hidden = encoder(input_tensor)
 
-    decoder_input = torch.tensor([[SOS_token]], device=device)  # SOS token as initial input
-    decoder_hidden = encoder_hidden  # Initialize decoder hidden state with encoder's final hidden state
+        decoder_input = torch.tensor([0], device='cuda')  #SOS token as initial input (0)
+        decoder_hidden = encoder_hidden.to('cuda') #initialize decoder hidden state with encoder's final hidden state
 
-    decoded_words = []
-    for di in range(max_length):
-        decoder_output, decoder_hidden, _ = decoder(decoder_input, decoder_hidden)
-        topv, topi = decoder_output.topk(1)
-        if topi.item() == EOS_token:
-            decoded_words.append('<EOS>')
-            break
-        else:
-            decoded_words.append(output_lang.index2word[topi.item()])
+        decoded_words = []
+        for di in range(max_length):
+            decoder_output, decoder_hidden, _ = decoder(decoder_input, decoder_hidden)
+            topv, topi = decoder_output.topk(1)
+            if topi.item() == 1: #EOS idx
+                decoded_words.append('<EOS>')
+                break
+            else:
+                decoded_words.append(output_lang.index2word[topi.item()])
 
-        decoder_input = topi.squeeze().detach()
+            decoder_input = topi.squeeze().detach()
 
-    return ' '.join(decoded_words)
+        return ' '.join(decoded_words)
 
+def indexesFromSentences(lang, sentence):
+    return torch.tensor([lang.word2index[word] for word in sentence.split(' ')], dtype=torch.long, device='cuda').view(-1, 1)
 
 if __name__ == "__main__":
     #test(input("Enter a sentence to translate: "))
     input_lang, output_lang, train_loader, val_loader, test_loader = get_dataloader()
-    sentence = "What is going on?"
+    sentence = "what is going"
     encoder,decoder = loadEncoderDecoderModel()
     output_translation = test(sentence, encoder, decoder, input_lang, output_lang)
     print('-')
