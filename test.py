@@ -24,23 +24,22 @@ def test(sentence,encoder, decoder, input_lang, output_lang, max_length=config.m
         decoder.to('cuda')
 
         encoder_outputs, encoder_hidden = encoder(input_tensor)
-
+        print(encoder_hidden)
         decoder_input = torch.tensor([0], device='cuda')  #SOS token as initial input (0)
         decoder_hidden = encoder_hidden.to('cuda') #initialize decoder hidden state with encoder's final hidden state
-
         decoded_words = []
         for di in range(max_length):
             decoder_output, decoder_hidden, _ = decoder(decoder_input, decoder_hidden)
             topv, topi = decoder_output.topk(1)
             if topi.item() == 1: #EOS idx
-                decoded_words.append('<EOS>')
-                break
+                decoded_words.append('<EOS>') #represent end of sentence
+                break #if eos, stop
             else:
-                decoded_words.append(output_lang.index2word[topi.item()])
+                decoded_words.append(output_lang.index2word[topi.item()]) #else append word to the translation
 
-            decoder_input = topi.squeeze().detach()
+            decoder_input = topi.squeeze().detach() #pass it as the next input for the decoder
 
-        return ' '.join(decoded_words)
+        return ' '.join(decoded_words) #return translation
 
 def indexesFromSentences(lang, sentence):
     return torch.tensor([lang.word2index[word] for word in sentence.split(' ')], dtype=torch.long, device='cuda').view(-1, 1)
@@ -48,7 +47,7 @@ def indexesFromSentences(lang, sentence):
 if __name__ == "__main__":
     #test(input("Enter a sentence to translate: "))
     input_lang, output_lang, train_loader, val_loader, test_loader = get_dataloader()
-    sentence = "what is going"
+    sentence = "who am i"
     encoder,decoder = loadEncoderDecoderModel()
     output_translation = test(sentence, encoder, decoder, input_lang, output_lang)
     print('-')
