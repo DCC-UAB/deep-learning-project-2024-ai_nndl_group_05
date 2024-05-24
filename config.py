@@ -6,10 +6,10 @@ language = "spa-eng"
 input_language = 'eng'
 output_language = 'spa'
 
-max_length = 10
+max_length = 5
 
 batch_size = 64  # Batch size for training.
-epochs = 1  # Number of epochs to train for.
+epochs = 4  # Number of epochs to train for.
 latent_dim = 128 #1024 # Latent dimensionality of the encoding space.
 num_samples =  90000 # Number of samples to train on.
 input_dim = 81 #num_encoder_tokens - number of unique char of language 1

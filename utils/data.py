@@ -144,7 +144,7 @@ def get_dataloader():
 
     data = TensorDataset(torch.LongTensor(input_ids).to(device),
                         torch.LongTensor(target_ids).to(device))
-    print("Train data tensor example: ",data[100000]) 
+    print("Train data tensor example: ",data[1000]) 
     # (tensor([ 236,  178, 2813,  663,  475,  224,  157,    1,    0,    0]), tensor([3938, 1636, 5700,   66, 2880,  460,  361,    1,    0,    0]))
     
     # Create dataloaders
