@@ -35,8 +35,8 @@ def create_wandb():
 if __name__ == "__main__":
     
     # start a new wandb run to track this script
-    #wandb.login(key="8090840539532ccc2f8ea5c1595fde6dbb57bf56")
-    #create_wandb()
+    wandb.login(key="8090840539532ccc2f8ea5c1595fde6dbb57bf56")
+    create_wandb()
 
     # Data preprocessing
     print("\n#----------------------------------------#")
@@ -56,5 +56,10 @@ if __name__ == "__main__":
     print("--------STARTING MODEL TESTING-------------")
     print("#----------------------------------------#\n")
 
-    #translated_sentences = test(input_lang, output_lang, test_loader)
+    # Get test dataset accuracy
+    test(input_lang, output_lang, test_loader, type='test')
+    
+    # Get training and validation datasets final translations
+    test(input_lang, output_lang, train_loader, type='train')
+    test(input_lang, output_lang, val_loader, type='val')
     

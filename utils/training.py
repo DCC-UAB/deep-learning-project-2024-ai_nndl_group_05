@@ -4,10 +4,11 @@ import torch
 import torch.nn as nn
 from torch import optim
 import torch.nn.functional as F
-#from torchviz import make_dot
+from torchviz import make_dot
 
 import time
 import math
+import wandb
 
 import config
 
@@ -31,22 +32,12 @@ def timeSince(since, percent):
     rs = es - s
     return '%s (- %s)' % (asMinutes(s), asMinutes(rs))
 
-def compute_accuracy(decoder_outputs, target_tensor):
-
-    total_correct_words = 0
-
-    for output, target in zip(decoder_outputs, target_tensor):
-        
-        # len(output) != len(target)
-
-        _, topi = output.topk(1)
-        pred = topi.squeeze()
-
-        correct = 0
-
-        # ... NOT FINISHED 
-
-    return total_correct_words / (len(decoder_outputs) * config.max_length)
+def compute_accuracy(predictions, targets):
+    _, predicted_ids = predictions.max(dim=-1)  # Get the index of the max log-probability
+    
+    correct = (predicted_ids == targets).float()  # Compare predictions with targets
+    accuracy = correct.sum() / correct.numel()  # Calculate accuracy as percentage
+    return accuracy.item()
 
 def translate(input_lang, output_lang, 
               input_tensor, decoded_outputs, target_tensor):
@@ -59,7 +50,7 @@ def translate(input_lang, output_lang,
         words = []
         for idx in ids:
             if idx.item() == EOS_token:
-                words.append('<EOS>')
+                words.append('EOS')
                 break
             words.append(lang.index2word[idx.item()])
 
@@ -127,7 +118,7 @@ class DecoderRNN(nn.Module):
 # TRAINING AND VALIDATION EPOCHS
 
 def train_epoch(dataloader, encoder, decoder, encoder_optimizer,
-          decoder_optimizer, criterion):
+          decoder_optimizer, criterion, n_epoch):
 
     total_loss = 0
     total_acc = 0
@@ -149,19 +140,27 @@ def train_epoch(dataloader, encoder, decoder, encoder_optimizer,
         )
         loss.backward()
 
+        acc = compute_accuracy(decoder_outputs, target_tensor)
+
         encoder_optimizer.step()
         decoder_optimizer.step()
 
         total_loss += loss.item()
-        #total_acc += compute_accuracy(decoder_outputs, target_tensor)
+        total_acc += acc
 
         if batch_idx % config.batch_size == 0:
                 print(f'    Step [{batch_idx+1}/{len(dataloader)}], ' 
                       f' Loss: {loss.item():.4f}, '
-                      f' Accuracy: ')
+                      f' Accuracy: {acc:.4f}')
+    
+    # If it is the last epoch, save the model visualization
+    if n_epoch == config.epochs:
+        y = encoder(input_tensor)
+        make_dot(y, params=dict(list(encoder.named_parameters()))).render(config.png_encoder_path, format="png")
+        y,_,_ = decoder(encoder_outputs, encoder_hidden, target_tensor)
+        make_dot(y, params=dict(list(decoder.named_parameters()))).render(config.png_decoder_path, format="png")
 
-    return total_loss / len(dataloader)
-    #return total_loss / len(dataloader), total_acc / len(dataloader)
+    return total_loss / len(dataloader), total_acc / len(dataloader)
 
 
 def val_epoch(dataloader, encoder, decoder, criterion,
@@ -183,13 +182,15 @@ def val_epoch(dataloader, encoder, decoder, criterion,
             target_tensor.view(-1)
         )
 
+        acc = compute_accuracy(decoder_outputs, target_tensor)
+
         total_loss += loss.item()
-        #total_acc += compute_accuracy(decoder_outputs, target_tensor)
+        total_acc += acc
 
         if batch_idx % config.batch_size == 0:
             print(f'        Step [{batch_idx+1}/{len(dataloader)}], ' 
-                  f' Loss: {loss.item():.4f}, ')
-                  #f' Accuracy: ')
+                  f' Loss: {loss.item():.4f}, '
+                  f' Accuracy: {acc:.4f}')
 
             # Get translation examples
             input_words, decoded_words, target_words = translate(input_lang, output_lang, 
@@ -201,8 +202,7 @@ def val_epoch(dataloader, encoder, decoder, criterion,
             print(f'            {output_lang.name} translation: {decoded_words}')
             print(f'            {output_lang.name} ground truth: {target_words}')
 
-    return total_loss / len(dataloader)
-    #return total_loss / len(dataloader), total_acc / len(dataloader)
+    return total_loss / len(dataloader), total_acc / len(dataloader)
 
 
 # TRAINING LOOP
@@ -233,19 +233,18 @@ def trainSeq2Seq(train_loader, val_loader, encoder, decoder,
 
         print("\nEpoch:",epoch)
 
-        loss = train_epoch(train_loader, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion)
-        #loss, acc = train_epoch(train_loader, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion)
+        #loss = train_epoch(train_loader, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion)
+        loss, acc = train_epoch(train_loader, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, n_epoch=epoch)
 
         losses_train.append(loss)
-        #acc_train.append(acc)
+        acc_train.append(acc)
 
         print(f'    Time: {timeSince(start, epoch / config.epochs)}, '
               f'Epochs completed: {epoch / config.epochs * 100}%, '
-              f'Epoch loss: {loss:.4f}')
-            #f'Epoch accuracy: {acc:.4f}')
+              f'Epoch loss: {loss:.4f}, '
+              f'Epoch accuracy: {acc:.4f}')
 
-
-        #wandb.log({'epoch': epoch, 'train/loss': avg_epoch_loss, 'train/accuracy': avg_epoch_acc})
+        wandb.log({'epoch': epoch, 'train/loss': loss, 'train/accuracy': acc})
 
         # Validation
         encoder.eval()
@@ -255,63 +254,20 @@ def trainSeq2Seq(train_loader, val_loader, encoder, decoder,
 
             print(f'\n   Validation: epoch {epoch}')
             
-            val_loss = val_epoch(val_loader, encoder, decoder, criterion, input_lang, output_lang)
-            #val_loss, val_acc = val_epoch(val_loader, encoder, decoder, criterion, input_lang, output_lang)
+            #val_loss = val_epoch(val_loader, encoder, decoder, criterion, input_lang, output_lang)
+            val_loss, val_acc = val_epoch(val_loader, encoder, decoder, criterion, input_lang, output_lang)
 
             losses_val.append(val_loss)
-            #acc_val.append(val_acc)
+            acc_val.append(val_acc)
 
-            #wandb.log({'epoch': epoch, 'validation/loss': avg_val_loss, 'validation/accuracy': avg_val_acc})
+            wandb.log({'epoch': epoch, 'validation/loss': val_loss, 'validation/accuracy': val_acc})
         
         encoder.train()
         decoder.train()
 
-
-
-# EVALUATE FUNCTIONS
-"""def indexesFromSentence(lang, sentence):
-    return [lang.word2index[word] for word in sentence.split(' ')]
-
-def tensorFromSentence(lang, sentence):
-    indexes = indexesFromSentence(lang, sentence)
-    indexes.append(EOS_token)
-    return torch.tensor(indexes, dtype=torch.long, device=device).view(1, -1)
-
-
-def tensorsFromPair(pair, input_lang, output_lang):
-    input_tensor = tensorFromSentence(input_lang, pair[0])
-    target_tensor = tensorFromSentence(output_lang, pair[1])
-    return (input_tensor, target_tensor)
-
-def evaluate(encoder, decoder, sentence, input_lang, output_lang):
-    with torch.no_grad():
-        input_tensor = tensorFromSentence(input_lang, sentence)
-
-        encoder_outputs, encoder_hidden = encoder(input_tensor)
-        decoder_outputs, decoder_hidden, decoder_attn = decoder(encoder_outputs, encoder_hidden)
-
-        _, topi = decoder_outputs.topk(1)
-        decoded_ids = topi.squeeze()
-
-        decoded_words = []
-        for idx in decoded_ids:
-            if idx.item() == EOS_token:
-                decoded_words.append('<EOS>')
-                break
-            decoded_words.append(output_lang.index2word[idx.item()])
-    return decoded_words, decoder_attn
-
-def evaluateRandomly(encoder, decoder, n=10):
-    encoder.eval()
-    decoder.eval()
-    for i in range(n):
-        pair = random.choice(pairs)
-        print('>', pair[0])
-        print('=', pair[1])
-        output_words, _ = evaluate(encoder, decoder, pair[0], input_lang, output_lang)
-        output_sentence = ' '.join(output_words)
-        print('<', output_sentence)
-        print('')"""
+    # Save the trained models
+    torch.save(encoder.state_dict(), config.encoder_path)
+    torch.save(decoder.state_dict(), config.decoder_path)
 
 
 
@@ -320,14 +276,8 @@ def train(input_lang, output_lang, train_loader, val_loader):
     # Create encoder and decoder
     encoder = EncoderRNN(input_lang.n_words, config.latent_dim).to(device)
     decoder = DecoderRNN(config.latent_dim, output_lang.n_words).to(device)
-    # Save models
-    torch.save(encoder.state_dict(), config.encoder_path)
-    torch.save(decoder.state_dict(), config.decoder_path)
-
     print("Encoder and decoder created.\n")
 
     # Train the decoder and encoder
     trainSeq2Seq(train_loader, val_loader, encoder, decoder, input_lang, output_lang)
     print("\nModel trained successfully.")
-
-    #evaluateRandomly(encoder, decoder)
