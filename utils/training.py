@@ -1,297 +1,283 @@
-from __future__ import print_function
+from __future__ import unicode_literals, print_function, division
 
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #dssable info messages
-import config
-
-from keras.utils.vis_utils import plot_model
-import wandb
 import torch
 import torch.nn as nn
-import torch.optim as optim
+from torch import optim
 import torch.nn.functional as F
-from torch.utils.tensorboard import SummaryWriter
+from torchviz import make_dot
+
+import time
+import math
 import wandb
 
-class EncoderLSTM(nn.Module):
-    def __init__(self, input_dim, hidden_dim, dropout):
-        super(EncoderLSTM, self).__init__()
-        self.hidden_dim = hidden_dim
-        self.lstm = nn.LSTM(input_dim, hidden_dim, dropout=dropout, batch_first=True)
+import config
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+SOS_token = 0
+EOS_token = 1
+
+
+# FUNCTIONS
+
+def asMinutes(s):
+    m = math.floor(s / 60)
+    s -= m * 60
+    return '%dm %ds' % (m, s)
+
+def timeSince(since, percent):
+    now = time.time()
+    s = now - since
+    es = s / (percent)
+    rs = es - s
+    return '%s (- %s)' % (asMinutes(s), asMinutes(rs))
+
+def compute_accuracy(predictions, targets):
+    _, predicted_ids = predictions.max(dim=-1)  # Get the index of the max log-probability
+    
+    correct = (predicted_ids == targets).float()  # Compare predictions with targets
+    accuracy = correct.sum() / correct.numel()  # Calculate accuracy as percentage
+    return accuracy.item()
+
+def translate(input_lang, output_lang, 
+              input_tensor, decoded_outputs, target_tensor):
+
+    def get_words(lang, tensor):
+
+        _, topi = tensor.topk(1)
+        ids = topi.squeeze()
+
+        words = []
+        for idx in ids:
+            if idx.item() == EOS_token:
+                words.append('EOS')
+                break
+            words.append(lang.index2word[idx.item()])
+
+        return words
+
+    input_words = [input_lang.index2word[idx.item()] for idx in input_tensor]
+    decoded_words = get_words(output_lang, decoded_outputs)
+    target_words = [output_lang.index2word[idx.item()] for idx in target_tensor]
+
+    return input_words, decoded_words, target_words
+
+
+# ENCODER / DECODER
+class EncoderRNN(nn.Module):
+    def __init__(self, input_size, hidden_size, dropout_p=0.1):
+        super(EncoderRNN, self).__init__()
+        self.hidden_size = hidden_size
+
+        self.embedding = nn.Embedding(input_size, hidden_size)
+        self.gru = nn.GRU(hidden_size, hidden_size, batch_first=True)
+        self.dropout = nn.Dropout(dropout_p)
+
+    def forward(self, input):
+        embedded = self.dropout(self.embedding(input))
+        output, hidden = self.gru(embedded)
+        return output, hidden
+    
+class DecoderRNN(nn.Module):
+    def __init__(self, hidden_size, output_size):
+        super(DecoderRNN, self).__init__()
+        self.embedding = nn.Embedding(output_size, hidden_size)
+        self.gru = nn.GRU(hidden_size, hidden_size, batch_first=True)
+        self.out = nn.Linear(hidden_size, output_size)
+
+    def forward(self, encoder_outputs, encoder_hidden, target_tensor=None):
+        batch_size = encoder_outputs.size(0)
+        decoder_input = torch.empty(batch_size, 1, dtype=torch.long, device=device).fill_(SOS_token)
+        decoder_hidden = encoder_hidden
+        decoder_outputs = []
+
+        for i in range(config.max_length):
+            decoder_output, decoder_hidden  = self.forward_step(decoder_input, decoder_hidden)
+            decoder_outputs.append(decoder_output)
+
+            if target_tensor is not None:
+                # Teacher forcing: Feed the target as the next input
+                decoder_input = target_tensor[:, i].unsqueeze(1) # Teacher forcing
+            else:
+                # Without teacher forcing: use its own predictions as the next input
+                _, topi = decoder_output.topk(1)
+                decoder_input = topi.squeeze(-1).detach()  # detach from history as input
+
+        decoder_outputs = torch.cat(decoder_outputs, dim=1)
+        decoder_outputs = F.log_softmax(decoder_outputs, dim=-1)
+        return decoder_outputs, decoder_hidden, None # We return `None` for consistency in the training loop
+
+    def forward_step(self, input, hidden):
+        output = self.embedding(input)
+        output = F.relu(output)
+        output, hidden = self.gru(output, hidden)
+        output = self.out(output)
+        return output, hidden
+    
+
+# TRAINING AND VALIDATION EPOCHS
+
+def train_epoch(dataloader, encoder, decoder, encoder_optimizer,
+          decoder_optimizer, criterion, n_epoch):
+
+    total_loss = 0
+    total_acc = 0
+
+    for batch_idx, data in enumerate(dataloader):
+
+        input_tensor, target_tensor = data
+        input_tensor.to(device), target_tensor.to(device)
+
+        encoder_optimizer.zero_grad()
+        decoder_optimizer.zero_grad()
+
+        encoder_outputs, encoder_hidden = encoder(input_tensor)
+        decoder_outputs, _, _ = decoder(encoder_outputs, encoder_hidden, target_tensor)
+
+        loss = criterion(
+            decoder_outputs.view(-1, decoder_outputs.size(-1)),
+            target_tensor.view(-1)
+        )
+        loss.backward()
+
+        acc = compute_accuracy(decoder_outputs, target_tensor)
+
+        encoder_optimizer.step()
+        decoder_optimizer.step()
+
+        total_loss += loss.item()
+        total_acc += acc
+
+        if batch_idx % config.batch_size == 0:
+                print(f'    Step [{batch_idx+1}/{len(dataloader)}], ' 
+                      f' Loss: {loss.item():.4f}, '
+                      f' Accuracy: {acc:.4f}')
+    
+    # If it is the last epoch, save the model visualization
+    if n_epoch == config.epochs:
+        y = encoder(input_tensor)
+        make_dot(y, params=dict(list(encoder.named_parameters()))).render(config.png_encoder_path, format="png")
+        y,_,_ = decoder(encoder_outputs, encoder_hidden, target_tensor)
+        make_dot(y, params=dict(list(decoder.named_parameters()))).render(config.png_decoder_path, format="png")
+
+    return total_loss / len(dataloader), total_acc / len(dataloader)
+
+
+def val_epoch(dataloader, encoder, decoder, criterion,
+              input_lang, output_lang):
+    
+    total_loss = 0
+    total_acc = 0
+
+    for batch_idx, data in enumerate(dataloader):
         
-    def forward(self, inputs):
-        outputs, (hidden, cell) = self.lstm(inputs)
-        return hidden, cell
+        input_tensor, target_tensor = data
+        input_tensor.to(device), target_tensor.to(device)
 
-class DecoderLSTM(nn.Module):
-    def __init__(self, output_dim, hidden_dim, dropout):
-        super(DecoderLSTM, self).__init__()
-        self.hidden_dim = hidden_dim
-        self.lstm = nn.LSTM(output_dim, hidden_dim, dropout=dropout, batch_first=True)
-        self.fc = nn.Linear(hidden_dim, output_dim)
-        self.softmax = nn.Softmax(dim=2)
-        
-    def forward(self, inputs, hidden, cell):
-        outputs, (hidden, cell) = self.lstm(inputs, (hidden, cell))
-        predictions = self.softmax(self.fc(outputs))
-        return predictions, hidden, cell
+        encoder_outputs, encoder_hidden = encoder(input_tensor)
+        decoder_outputs, _, _ = decoder(encoder_outputs, encoder_hidden, target_tensor)
 
-class EncoderGRU(nn.Module):
-    def __init__(self, input_dim, hidden_dim):
-        super(EncoderGRU, self).__init__()
-        self.hidden_dim = hidden_dim
-        self.gru = nn.GRU(input_dim, hidden_dim, batch_first=True)
-        
-    def forward(self, inputs):
-        outputs, hidden = self.gru(inputs)
-        return hidden
+        loss = criterion(
+            decoder_outputs.view(-1, decoder_outputs.size(-1)),
+            target_tensor.view(-1)
+        )
 
-class DecoderGRU(nn.Module):
-    def __init__(self, output_dim, hidden_dim):
-        super(DecoderGRU, self).__init__()
-        self.hidden_dim = hidden_dim
-        self.gru = nn.GRU(output_dim, hidden_dim, batch_first=True)
-        self.fc = nn.Linear(hidden_dim, output_dim)
-        self.softmax = nn.Softmax(dim=2)
-        
-    def forward(self, inputs, hidden):
-        outputs, hidden = self.gru(inputs, hidden)
-        predictions = self.softmax(self.fc(outputs))
-        return predictions, hidden
+        acc = compute_accuracy(decoder_outputs, target_tensor)
 
-"""
-class Seq2SeqEncoder(nn.Module):
-    def __init__(self, input_dim, embed_dim, hidden_dim, n_layers, cell_type='LSTM'):
-        super(Seq2SeqEncoder, self).__init__()
-        self.embedding = nn.Embedding(input_dim, embed_dim)
-        if cell_type == 'LSTM':
-            self.rnn = nn.LSTM(embed_dim, hidden_dim, n_layers, batch_first=True)
-        elif cell_type == 'GRU':
-            self.rnn = nn.GRU(embed_dim, hidden_dim, n_layers, batch_first=True)
-        else:
-            raise ValueError("Invalid cell type. Use 'LSTM' or 'GRU'.")
-    
-    def forward(self, src):
-        embedded = self.embedding(src)
-        outputs, hidden = self.rnn(embedded)
-        return outputs, hidden
+        total_loss += loss.item()
+        total_acc += acc
 
-class Seq2SeqDecoder(nn.Module):
-    def __init__(self, output_dim, embed_dim, hidden_dim, n_layers, cell_type='LSTM'):
-        super(Seq2SeqDecoder, self).__init__()
-        self.embedding = nn.Embedding(output_dim, embed_dim)
-        if cell_type == 'LSTM':
-            self.rnn = nn.LSTM(embed_dim, hidden_dim, n_layers, batch_first=True)
-        elif cell_type == 'GRU':
-            self.rnn = nn.GRU(embed_dim, hidden_dim, n_layers, batch_first=True)
-        self.fc = nn.Linear(hidden_dim, output_dim)
-    
-    def forward(self, trg, hidden):
-        embedded = self.embedding(trg)
-        outputs, hidden = self.rnn(embedded, hidden)
-        predictions = self.fc(outputs)
-        return predictions, hidden
-"""
-class Seq2Seq(nn.Module):
-    def __init__(self, encoder, decoder, cell_type):
-        super(Seq2Seq, self).__init__()
-        self.encoder = encoder
-        self.decoder = decoder
-        self.cell_type = cell_type
-        
-    def forward(self, encoder_input, decoder_input):
-        if self.cell_type == 'LSTM':
-            hidden, cell = self.encoder(encoder_input)
-            decoder_output, _, _ = self.decoder(decoder_input, hidden, cell)
-        elif self.cell_type == 'GRU':
-            hidden = self.encoder(encoder_input)
-            decoder_output, _ = self.decoder(decoder_input, hidden)
-        
-        return decoder_output
+        if batch_idx % config.batch_size == 0:
+            print(f'        Step [{batch_idx+1}/{len(dataloader)}], ' 
+                  f' Loss: {loss.item():.4f}, '
+                  f' Accuracy: {acc:.4f}')
 
-def modelTranslation():
-    cell_type = config.cell_type
-    input_dim = config.input_dim
-    latent_dim = config.latent_dim
-    output_dim = config.output_dim
-    dropout = config.dropouts
-    
-    #encoder = Seq2SeqEncoder(input_dim, latent_dim, hidden_dim, config.ltsm_layers, config.cell_type)
-    #decoder = Seq2SeqDecoder(output_dim, latent_dim, hidden_dim, config.ltsm_layers, config.cell_type)
-    
-    if cell_type == 'LSTM':
-        encoder = EncoderLSTM(input_dim, latent_dim, dropout)
-        decoder = DecoderLSTM(output_dim, latent_dim, dropout)
-    elif cell_type == 'GRU':
-        encoder = EncoderGRU(input_dim, latent_dim)
-        decoder = DecoderGRU(output_dim, latent_dim)
-    else:
-        raise ValueError("Unsupported cell type: {}".format(cell_type))
-    
-
-    model = Seq2Seq(encoder, decoder, cell_type)
-    
-    return model
-
-def compute_accuracy(preds, y):
-    """
-    Returns accuracy per batch, i.e. if you get 8/10 right, this returns 0.8, NOT 8
-    """
-    max_preds = preds.argmax(dim = 1, keepdim = True) # get the index of the max probability
-    non_pad_elements = (y).nonzero()
-    correct = max_preds[non_pad_elements].squeeze(1).eq(y[non_pad_elements])
-    return correct.sum() / y[non_pad_elements].shape[0]
-
-def trainSeq2Seq(model, train_loader, val_loader):
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
-
-    # Define loss function and optimizer
-    criterion = nn.CrossEntropyLoss()
-    optimizer = getattr(torch.optim, config.opt)(model.parameters(), lr=config.learning_rate)
-    
-    # TensorBoard writer
-    log_path = "./models/log"
-    writer = SummaryWriter(log_dir=log_path)
-    
-    # Training loop
-    model.train()
-    for epoch in range(config.epochs):
-        epoch_loss = 0
-        epoch_acc = 0
-        for batch_idx, (encoder_inputs, decoder_inputs, targets) in enumerate(train_loader):
-
-            encoder_inputs, decoder_inputs, targets = encoder_inputs.to(device), decoder_inputs.to(device), targets.to(device)
-
-            optimizer.zero_grad()
+            # Get translation examples
+            input_words, decoded_words, target_words = translate(input_lang, output_lang, 
+                                                                input_tensor[0], 
+                                                                decoder_outputs[0], 
+                                                                target_tensor[0])
             
-            outputs = model(encoder_inputs, decoder_inputs)
-   
-            loss = criterion(outputs,targets)
-            acc = compute_accuracy(outputs, targets)
+            print(f'            {input_lang.name}: {input_words}')
+            print(f'            {output_lang.name} translation: {decoded_words}')
+            print(f'            {output_lang.name} ground truth: {target_words}')
 
-            loss.backward()
-            optimizer.step()
-            
-            epoch_loss += loss.item()
-            epoch_acc += acc.item()
+    return total_loss / len(dataloader), total_acc / len(dataloader)
 
-            if batch_idx % 100 == 0:
-                print(f'Epoch [{epoch+1}/{config.epochs}], Step [{batch_idx+1}/{len(train_loader)}],' 
-                      f'Loss: {loss.item():.4f}, Accuracy: {acc.item():.4f}')
-        
-        avg_epoch_loss = epoch_loss / len(train_loader)
-        avg_epoch_acc = epoch_acc / len(train_loader)
-        writer.add_scalar('Loss/train', avg_epoch_loss, epoch)
-        writer.add_scalar('Accuracy/train', avg_epoch_acc, epoch)
-        wandb.log({'train/loss': avg_epoch_loss, 'train/accuracy': avg_epoch_acc})
-        
+
+# TRAINING LOOP
+
+def trainSeq2Seq(train_loader, val_loader, encoder, decoder,
+                 input_lang, output_lang):
+    
+    start = time.time()
+    
+    losses_train, acc_train = [],[]
+    losses_val, acc_val = [],[]
+
+    # Define optimizer and criterion
+    encoder_optimizer = getattr(torch.optim, config.opt)(encoder.parameters(), lr=config.learning_rate)
+    print("Encoder optimizer:",encoder_optimizer)
+
+    decoder_optimizer = getattr(torch.optim, config.opt)(decoder.parameters(), lr=config.learning_rate)
+    print("Decoder optimizer:",decoder_optimizer)
+    
+    criterion = {'NLLLoss': nn.NLLLoss, 'CrossEntropyLoss': nn.CrossEntropyLoss}[config.criterion]()
+    print("Loss function: ", criterion)
+
+    # Training
+    encoder.train()
+    decoder.train()
+
+    for epoch in range(1, config.epochs + 1):
+
+        print("\nEpoch:",epoch)
+
+        #loss = train_epoch(train_loader, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion)
+        loss, acc = train_epoch(train_loader, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, n_epoch=epoch)
+
+        losses_train.append(loss)
+        acc_train.append(acc)
+
+        print(f'    Time: {timeSince(start, epoch / config.epochs)}, '
+              f'Epochs completed: {epoch / config.epochs * 100}%, '
+              f'Epoch loss: {loss:.4f}, '
+              f'Epoch accuracy: {acc:.4f}')
+
+        wandb.log({'epoch': epoch, 'train/loss': loss, 'train/accuracy': acc})
+
         # Validation
-        model.eval()
+        encoder.eval()
+        decoder.eval()
+
         with torch.no_grad():
-            val_loss = 0
-            #val_acc = 0
-            correct = 0
-            total = 0
-            for encoder_inputs, decoder_inputs, targets in val_loader:
-                encoder_inputs, decoder_inputs, targets = encoder_inputs.to(device), decoder_inputs.to(device), targets.to(device)
-                
-                outputs = model(encoder_inputs, decoder_inputs)
-                
-                loss = criterion(outputs,targets)
 
-                val_loss += loss.item()
-                #val_acc += acc.item()
-                
-                #_, predicted = torch.max(outputs.data, -1)
-                _, predicted = torch.max(outputs.data)
-                total += targets.size(0) * targets.size(1)  # assuming targets are of shape (batch_size, sequence_length)
-                correct += (predicted == targets).sum().item()
-                
-            avg_val_loss = val_loss / len(val_loader)
-            accuracy = correct / total
-            writer.add_scalar('Loss/validation', avg_val_loss, epoch)
-            writer.add_scalar('Accuracy/validation', accuracy, epoch)
-            wandb.log({'validation/loss': avg_val_loss, 'validation/accuracy': accuracy})
+            print(f'\n   Validation: epoch {epoch}')
+            
+            #val_loss = val_epoch(val_loader, encoder, decoder, criterion, input_lang, output_lang)
+            val_loss, val_acc = val_epoch(val_loader, encoder, decoder, criterion, input_lang, output_lang)
+
+            losses_val.append(val_loss)
+            acc_val.append(val_acc)
+
+            wandb.log({'epoch': epoch, 'validation/loss': val_loss, 'validation/accuracy': val_acc})
         
-        model.train()
+        encoder.train()
+        decoder.train()
 
-    # Final evaluation
-    model.eval()
-    with torch.no_grad():
-        val_loss = 0
-        correct = 0
-        total = 0
-        for encoder_inputs, decoder_inputs, targets in val_loader:
-            
-            encoder_inputs, decoder_inputs, targets = encoder_inputs.to(device), decoder_inputs.to(device), targets.to(device)
-            
-            outputs = model(encoder_inputs, decoder_inputs)
-                
-            loss = criterion(outputs,targets)
-
-            val_loss += loss.item()
-            
-            _, predicted = torch.max(outputs.data, -1)
-            total += targets.size(0) * targets.size(1)
-            correct += (predicted == targets).sum().item()
-            
-        avg_val_loss = val_loss / len(val_loader)
-        accuracy = correct / total
-        wandb.log({'evaluate/loss': avg_val_loss, 'evaluate/accuracy': accuracy})
-
-    writer.close()
-
-    plot_model(model, to_file=config.png_model_path, show_shapes=True, show_layer_names=True)
-    # Save model with torch or with onnx
-
-def generateInferenceModel():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
-    # Define the model parameters
-    input_dim = config.input_dim
-    output_dim = config.output_dim
-    latent_dim = config.latent_dim #embed_dim = wandb.config.embed_dim
-    #hidden_dim = wandb.config.latent_dim
-    #n_layers = wandb.config.n_layers
-    cell_type = config.cell_type
-    dropout = config.dropouts
-    
-    # Initialize encoder and decoder
-    #encoder = Seq2SeqEncoder(input_dim, latent_dim, hidden_dim, n_layers, cell_type).to(device)
-    #decoder = Seq2SeqDecoder(output_dim, latent_dim, hidden_dim, n_layers, cell_type).to(device)
-    if cell_type == 'LSTM':
-        encoder = EncoderLSTM(input_dim, latent_dim, dropout).to(device)
-        decoder = DecoderLSTM(output_dim, latent_dim, dropout).to(device)
-    elif cell_type == 'GRU':
-        encoder = EncoderGRU(input_dim, latent_dim).to(device)
-        decoder = DecoderGRU(output_dim, latent_dim).to(device)
-    else:
-        raise ValueError("Invalid cell type. Use 'LSTM' or 'GRU'.")
-
-    # Save models
+    # Save the trained models
     torch.save(encoder.state_dict(), config.encoder_path)
     torch.save(decoder.state_dict(), config.decoder_path)
 
-    plot_model(encoder, to_file=config.png_encoder_path, show_shapes=True, show_layer_names=True)
-    plot_model(decoder, to_file=config.png_decoder_path, show_shapes=True, show_layer_names=True)
-    
 
 
+# MAIN
+def train(input_lang, output_lang, train_loader, val_loader):
+    # Create encoder and decoder
+    encoder = EncoderRNN(input_lang.n_words, config.latent_dim).to(device)
+    decoder = DecoderRNN(config.latent_dim, output_lang.n_words).to(device)
+    print("Encoder and decoder created.\n")
 
-#--------------------MAIN----------------------#
-
-def train(train_loader,val_loader):
-
-    # we build the model
-    model = modelTranslation()
-    print("Model built successfully.\n")
-
-    # we train it
-    trainSeq2Seq(model, train_loader, val_loader)
-    print("\nModel trained successfully.\n")
-    
-    # we build the final model for the inference (slightly different) and we save it
-    generateInferenceModel()
-    print("\nInference model built successfully.\n")
+    # Train the decoder and encoder
+    trainSeq2Seq(train_loader, val_loader, encoder, decoder, input_lang, output_lang)
+    print("\nModel trained successfully.")

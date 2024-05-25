@@ -1,0 +1,53 @@
+{
+    "os": "Windows-10-10.0.22631-SP0",
+    "python": "3.11.2",
+    "heartbeatAt": "2024-05-25T10:56:42.510809",
+    "startedAt": "2024-05-25T10:56:41.051365",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "c:\\Users\\sara0\\Desktop\\uni\\SECOND YEAR\\NN & Deep Learning\\dl project\\deep-learning-project-2024-ai_nndl_group_05-1\\main.py",
+    "codePathLocal": "main.py",
+    "codePath": "main.py",
+    "git": {
+        "remote": "https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05.git",
+        "commit": "ccb2b48491874b8df5fcdf5eb39771be575274b5"
+    },
+    "email": "sara.04.sm@gmail.com",
+    "root": "C:/Users/sara0/Desktop/uni/SECOND YEAR/NN & Deep Learning/dl project/deep-learning-project-2024-ai_nndl_group_05-1",
+    "host": "MSI",
+    "username": "sara0",
+    "executable": "C:\\Users\\sara0\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+    "cpu_count": 4,
+    "cpu_count_logical": 8,
+    "cpu_freq": {
+        "current": 2803.0,
+        "min": 0.0,
+        "max": 2803.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2803.0,
+            "min": 0.0,
+            "max": 2803.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 932.3974571228027,
+            "used": 392.1546401977539
+        }
+    },
+    "gpu": "GeForce MX450",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "GeForce MX450",
+            "memory_total": 2147483648
+        }
+    ],
+    "memory": {
+        "total": 15.70888900756836
+    }
+}
