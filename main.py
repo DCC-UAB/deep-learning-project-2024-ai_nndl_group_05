@@ -27,7 +27,7 @@ def create_wandb():
         project="Machine_Translation",
         # track hyperparameters and run metadata
         config=config_defaults,
-        name = "Execution",
+        name = config.name,
         allow_val_change=True
         )
 
