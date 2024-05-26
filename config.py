@@ -24,7 +24,7 @@ criterion = 'NLLLoss' #'CrossEntropyLoss'
 ltsm_layers = 1
 dropouts = 0
 opt = 'Adam' #'RMSprop'
-name = "Execution"
+name = f'{cell_type}-{criterion}-opt={opt}-lr={learning_rate}'
 
 
 # Paths
