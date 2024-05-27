@@ -85,7 +85,7 @@ def test(input_lang, output_lang, data_loader, type='test'):
 
     df.to_csv(path, index=False)
 
-    print("\nModel tested succesfully.")
+    print("\n")
 
 
 
