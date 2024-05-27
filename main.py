@@ -62,4 +62,6 @@ if __name__ == "__main__":
     # Get training and validation datasets final translations
     test(input_lang, output_lang, train_loader, type='train')
     test(input_lang, output_lang, val_loader, type='val')
+
+    print("\nModel tested succesfully.\n")
     

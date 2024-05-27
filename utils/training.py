@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from torch import optim
 import torch.nn.functional as F
-from torchviz import make_dot
+#from torchviz import make_dot
 
 import time
 import math
@@ -153,12 +153,12 @@ def train_epoch(dataloader, encoder, decoder, encoder_optimizer,
                       f' Loss: {loss.item():.4f}, '
                       f' Accuracy: {acc:.4f}')
     
-    # If it is the last epoch, save the model visualization
+    """# If it is the last epoch, save the model visualization
     if n_epoch == config.epochs:
         y = encoder(input_tensor)
         make_dot(y, params=dict(list(encoder.named_parameters()))).render(config.png_encoder_path, format="png")
         y,_,_ = decoder(encoder_outputs, encoder_hidden, target_tensor)
-        make_dot(y, params=dict(list(decoder.named_parameters()))).render(config.png_decoder_path, format="png")
+        make_dot(y, params=dict(list(decoder.named_parameters()))).render(config.png_decoder_path, format="png")"""
 
     return total_loss / len(dataloader), total_acc / len(dataloader)
 
