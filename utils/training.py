@@ -1,25 +1,16 @@
 from __future__ import unicode_literals, print_function, division
-
 import torch
 import torch.nn as nn
-from torch import optim
 import torch.nn.functional as F
-#from torchviz import make_dot
-
-#from nltk.translate.bleu_score import corpus_bleu
-import jiwer
-
 import time
 import math
 import wandb
-
+import jiwer
 import config
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 SOS_token = 0
 EOS_token = 1
-
 
 # FUNCTIONS
 
@@ -65,20 +56,26 @@ def compute_accuracy(predictions, targets, output_lang, eos_token="EOS"):
     accuracy = total_correct / total_words if total_words > 0 else 0
     return accuracy
 
-def wer(reference, hypothesis):
-    wer = jiwer.wer(reference, hypothesis)
-    return wer
-
+def wer(reference, hypothesis, eos_token="EOS"):
+    total_error = 0
+    total_words = 0
+    if reference != eos_token and hypothesis != eos_token:  
+        error = jiwer.wer(reference, hypothesis)
+        total_words += len(reference.split())
+        total_error += error
+    wer_value = total_error / total_words if total_words > 0 else 0
+    return wer_value
 def per(reference, hypothesis, eos_token="EOS"):
     total_error = 0
-    c = 0
+    total_words = 0  
     for ref, hyp in zip(reference, hypothesis):
         ref_chars = ''.join(' '.join(ref).split(eos_token)[0])
         hyp_chars = ''.join(' '.join(hyp).split(eos_token)[0])
         error = jiwer.wer(ref_chars, hyp_chars)
+        total_words += len(ref)
         total_error += error
-        c += 1
-    return total_error / c if c > 0 else 0
+    per_value = total_error / total_words if total_words > 0 else 0
+    return per_value
 
 def evaluate_per(predictions, targets, output_lang):
     def tensor_to_words(tensor, lang):
@@ -91,7 +88,7 @@ def evaluate_per(predictions, targets, output_lang):
     batch_size = predictions.size(0)
     
     for i in range(batch_size):
-        predicted_ids = predictions[i].max(dim=-1)[1]  # Get the predicted word indices
+        predicted_ids = predictions[i].max(dim=-1)[1]  
         reference_sentence = tensor_to_words(targets[i], output_lang)
         hypothesis_sentence = tensor_to_words(predicted_ids, output_lang)
         
@@ -115,18 +112,16 @@ def evaluate_wer(predictions, targets, output_lang, eos_token="EOS"):
     batch_size = predictions.size(0)
     
     for i in range(batch_size):
-        predicted_ids = predictions[i].max(dim=-1)[1]  # Get the predicted word indices
+        predicted_ids = predictions[i].max(dim=-1)[1] 
         reference_sentence = tensor_to_words(targets[i], output_lang, eos_token)
         hypothesis_sentence = tensor_to_words(predicted_ids, output_lang, eos_token)
-
         reference_sentence_str = ' '.join(reference_sentence)
         hypothesis_sentence_str = ' '.join(hypothesis_sentence)
-
-        wer_value = jiwer.wer(reference_sentence_str, hypothesis_sentence_str)
+        wer_value = wer(reference_sentence_str, hypothesis_sentence_str)
         total_wer += wer_value
-    
     average_wer = total_wer / batch_size
     return average_wer
+
 
 def translate(input_lang, output_lang, 
               input_tensor, decoded_outputs, target_tensor):
