@@ -10,8 +10,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def loadEncoderDecoderModel(input_lang, output_lang):
-    encoder = EncoderRNN(input_lang.n_words, config.latent_dim)
-    decoder =  DecoderRNN(config.latent_dim, output_lang.n_words)
+    encoder = EncoderRNN(input_lang.n_words, config.latent_dim).to(device)
+    decoder =  DecoderRNN(config.latent_dim, output_lang.n_words).to(device)
     encoder.load_state_dict(torch.load(config.encoder_path))
     decoder.load_state_dict(torch.load(config.decoder_path))
     return encoder, decoder
