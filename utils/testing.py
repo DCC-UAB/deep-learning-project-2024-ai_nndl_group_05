@@ -3,7 +3,7 @@ import wandb
 import pandas as pd
 import torch
 import torch.nn as nn
-from utils.training import EncoderRNN, DecoderRNN, translate, compute_accuracy
+from utils.training import *
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -31,6 +31,8 @@ def test(input_lang, output_lang, data_loader, type='test'):
     translated_sentences = []
     total_loss = []
     total_acc = []
+    total_wer = []
+    total_per = []
 
     with torch.no_grad():
         for batch_idx, data in enumerate(data_loader):
@@ -50,6 +52,13 @@ def test(input_lang, output_lang, data_loader, type='test'):
             total_loss.append(loss.item())
             total_acc.append(acc)
 
+            # Compute WER and PER for the current batch
+            wer = evaluate_wer(decoder_outputs, target_tensor, output_lang)
+            total_wer.append(wer)
+
+            per = evaluate_per(decoder_outputs, target_tensor, output_lang)
+            total_per.append(per)
+            
             for input, output, target in zip(input_tensor, decoder_outputs, target_tensor):
                 input_words, decoded_words, target_words = translate(input_lang, output_lang, 
                                                                     input, output, target)
@@ -59,19 +68,27 @@ def test(input_lang, output_lang, data_loader, type='test'):
                 if batch_idx % config.batch_size == 0:
                     print(f'    Step [{batch_idx+1}/{len(data_loader)}], ' 
                         f' Loss: {loss.item():.4f}, '
-                        f' Accuracy: {acc:.4f}')
+                        f'Accuracy: {acc:.4f}, '
+                        f'WER: {wer:.4f}, '
+                        f'PER: {per:.4f}')
 
     avg_loss = sum(total_loss) / len(data_loader)
     avg_acc = sum(total_acc) / len(data_loader)     
+    avg_wer = sum(total_wer) / len(data_loader)
+    avg_per = sum(total_per) / len(data_loader)
     
     # Print final metrics
     print(f'Average loss of {type} data: {avg_loss}, '
-          f'Average accuracy of {type} data: {avg_acc}')
+          f'Average accuracy of {type} data: {avg_acc}, '
+          f'Average WER of {type} data: {avg_wer}, '
+          f'Average PER of {type} data: {avg_per}')
     
     # Store loss and accuracy evolution
     if type == 'test':
         wandb.log({'test/loss': avg_loss, 
-                'test/accuracy': avg_acc})
+                'test/accuracy': avg_acc,
+                'test/WER': avg_wer,
+                'test/PER': avg_per})
 
     # Store translated sentences in csv
     df = pd.DataFrame(translated_sentences, columns=['Input', 'Output', 'Target'])

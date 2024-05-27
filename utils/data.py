@@ -54,7 +54,7 @@ def normalizeString(s):
 
 
 # Read spa-eng file
-def readLangs(lang1, lang2, reverse=False):
+def readLangs(lang1, lang2):
     print("Reading lines...")
 
     # Read the file and split into lines
@@ -66,7 +66,7 @@ def readLangs(lang1, lang2, reverse=False):
     pairs = [pair[:2] for pair in pairs]
 
     # Reverse pairs, make Lang instances
-    if reverse:
+    if config.reverse:
         pairs = [list(reversed(p)) for p in pairs]
         input_lang = Lang(lang2)
         output_lang = Lang(lang1)
@@ -77,21 +77,9 @@ def readLangs(lang1, lang2, reverse=False):
     return input_lang, output_lang, pairs
 
 
-# Trim examples to sentences of max 10 words
-
-"""eng_prefixes = (
-    "i am ", "i m ",
-    "he is", "he s ",
-    "she is", "she s ",
-    "you are", "you re ",
-    "we are", "we re ",
-    "they are", "they re "
-)"""
-
 def filterPair(p):
     return len(p[0].split(' ')) < config.max_length and \
-        len(p[1].split(' ')) < config.max_length #and \
-        #p[1].startswith(eng_prefixes)
+        len(p[1].split(' ')) < config.max_length
 
 
 def filterPairs(pairs):
@@ -103,8 +91,8 @@ def indexesFromSentence(lang, sentence):
     return [lang.word2index[word] for word in sentence.split(' ')]
 
 
-def prepareData(lang1, lang2, reverse=False):
-    input_lang, output_lang, pairs = readLangs(lang1, lang2, reverse)
+def prepareData(lang1, lang2):
+    input_lang, output_lang, pairs = readLangs(lang1, lang2)
     print(f"Read {len(pairs)} sentence pairs")
     pairs = filterPairs(pairs) #borrar
     print(f"Trimmed to {len(pairs)} sentence pairs") #borrar
@@ -124,8 +112,7 @@ def prepareData(lang1, lang2, reverse=False):
 
 def get_dataloader():
     input_lang, output_lang, pairs = prepareData(config.input_language, 
-                                                 config.output_language, 
-                                                 reverse=False)
+                                                 config.output_language)
 
     # Transform to numerical data: one hot vector 
     n = len(pairs)
