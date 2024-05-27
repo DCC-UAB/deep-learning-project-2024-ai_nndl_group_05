@@ -65,7 +65,7 @@ def translate(input_lang, output_lang,
 
 # ENCODER / DECODER
 class EncoderRNN(nn.Module):
-    def __init__(self, input_size, hidden_size, dropout_p=0.1):
+    def __init__(self, input_size, hidden_size, dropout_p=config.dropouts):
         super(EncoderRNN, self).__init__()
         self.hidden_size = hidden_size
 

@@ -12,6 +12,7 @@ batch_size = 64  # Batch size for training.
 epochs = 2  # Number of epochs to train for.
 latent_dim = 128 #1024 # Latent dimensionality of the encoding space.
 num_samples =  90000 # Number of samples to train on.
+
 input_dim = 81 #num_encoder_tokens - number of unique char of language 1
 output_dim = 99 #num_decoder_tokens - number of unique char of language 2
 
@@ -24,7 +25,7 @@ criterion = 'NLLLoss' #'CrossEntropyLoss'
 ltsm_layers = 1
 dropouts = 0
 opt = 'Adam' #'RMSprop'
-name = f'{cell_type}-{criterion}-opt={opt}-lr={learning_rate}'
+name = f'{cell_type}-latent_dim={latent_dim},{criterion},opt={opt},lr={learning_rate},dropout={dropouts}'
 
 
 # Paths
