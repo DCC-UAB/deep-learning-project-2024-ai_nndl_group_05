@@ -47,7 +47,7 @@ def test(input_lang, output_lang, data_loader, type='test'):
                 decoder_outputs.view(-1, decoder_outputs.size(-1)),
                 target_tensor.view(-1)
             )
-            acc = compute_accuracy(decoder_outputs, target_tensor)
+            acc = compute_accuracy(decoder_outputs, target_tensor, output_lang)
 
             total_loss.append(loss.item())
             total_acc.append(acc)

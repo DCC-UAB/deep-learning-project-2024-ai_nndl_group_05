@@ -36,29 +36,49 @@ def timeSince(since, percent):
     return '%s (- %s)' % (asMinutes(s), asMinutes(rs))
 
 # EVALUATIONS
-def compute_accuracy(predictions, targets):
-    _, predicted_ids = predictions.max(dim=-1)  # Get the index of the max log-probability
+def compute_accuracy(predictions, targets, output_lang, eos_token="EOS"):
+    def tensor_to_words(tensor, lang, eos_token):
+        words = []
+        for idx in tensor:
+            word = lang.index2word[idx.item()]
+            if word == eos_token:
+                break
+            words.append(word)
+        return words
+
+    batch_size = predictions.size(0)
+    total_correct = 0
+    total_words = 0
     
-    correct = (predicted_ids == targets).float()  # Compare predictions with targets
-    accuracy = correct.sum() / correct.numel()  # Calculate accuracy as percentage
-    return accuracy.item()
+    for i in range(batch_size):
+        predicted_ids = predictions[i].max(dim=-1)[1]  # Get the predicted word indices
+        reference_words = tensor_to_words(targets[i], output_lang, eos_token)
+        predicted_words = tensor_to_words(predicted_ids, output_lang, eos_token)
+        
+        for pred_word, ref_word in zip(predicted_words, reference_words):
+            if pred_word == eos_token or ref_word == eos_token:
+                break
+            if pred_word == ref_word:
+                total_correct += 1
+            total_words += 1
+
+    accuracy = total_correct / total_words if total_words > 0 else 0
+    return accuracy
 
 def wer(reference, hypothesis):
     wer = jiwer.wer(reference, hypothesis)
     return wer
 
-def per(reference, hypothesis):
+def per(reference, hypothesis, eos_token="EOS"):
     total_error = 0
     c = 0
     for ref, hyp in zip(reference, hypothesis):
-        # Convert word lists to character lists
-        ref_chars = ' '.join(ref)
-        hyp_chars = ' '.join(hyp)
-        # Calculate character-level WER, which is effectively PER
+        ref_chars = ''.join(' '.join(ref).split(eos_token)[0])
+        hyp_chars = ''.join(' '.join(hyp).split(eos_token)[0])
         error = jiwer.wer(ref_chars, hyp_chars)
         total_error += error
         c += 1
-    return total_error / c
+    return total_error / c if c > 0 else 0
 
 def evaluate_per(predictions, targets, output_lang):
     def tensor_to_words(tensor, lang):
@@ -81,14 +101,14 @@ def evaluate_per(predictions, targets, output_lang):
     average_per = total_per / batch_size
     return average_per
 
-def evaluate_wer(predictions, targets, output_lang):
-    def tensor_to_words(tensor, lang):
-        """
-        Convert tensor of word indices to a list of words.
-        """
+def evaluate_wer(predictions, targets, output_lang, eos_token="EOS"):
+    def tensor_to_words(tensor, lang, eos_token):
         words = []
         for idx in tensor:
-            words.append(lang.index2word[idx.item()])
+            word = lang.index2word[idx.item()]
+            if word == eos_token:
+                break
+            words.append(word)
         return words
 
     total_wer = 0
@@ -96,10 +116,13 @@ def evaluate_wer(predictions, targets, output_lang):
     
     for i in range(batch_size):
         predicted_ids = predictions[i].max(dim=-1)[1]  # Get the predicted word indices
-        reference_sentence = tensor_to_words(targets[i], output_lang)
-        hypothesis_sentence = tensor_to_words(predicted_ids, output_lang)
-        
-        wer_value = wer(reference_sentence, hypothesis_sentence)
+        reference_sentence = tensor_to_words(targets[i], output_lang, eos_token)
+        hypothesis_sentence = tensor_to_words(predicted_ids, output_lang, eos_token)
+
+        reference_sentence_str = ' '.join(reference_sentence)
+        hypothesis_sentence_str = ' '.join(hypothesis_sentence)
+
+        wer_value = jiwer.wer(reference_sentence_str, hypothesis_sentence_str)
         total_wer += wer_value
     
     average_wer = total_wer / batch_size
@@ -221,7 +244,7 @@ def train_epoch(dataloader, encoder, decoder, encoder_optimizer,
         decoder_optimizer.step()
 
         total_loss += loss.item()
-        acc = compute_accuracy(decoder_outputs, target_tensor)
+        acc = compute_accuracy(decoder_outputs, target_tensor, output_lang)
         total_acc += acc
         wer = evaluate_wer(decoder_outputs, target_tensor, output_lang)
         total_wer += wer 
@@ -263,7 +286,7 @@ def val_epoch(dataloader, encoder, decoder, criterion,
             target_tensor.view(-1)
         )
 
-        acc = compute_accuracy(decoder_outputs, target_tensor)
+        acc = compute_accuracy(decoder_outputs, target_tensor, output_lang)
 
         total_loss += loss.item()
         total_acc += acc
