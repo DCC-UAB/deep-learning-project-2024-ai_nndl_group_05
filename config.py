@@ -2,7 +2,7 @@
 #--------------CONFIGURATION----------------#
 #-------------------------------------------#
 
-reverse = False
+reverse = True
 
 if reverse == False:
     language = "eng-spa"
@@ -18,8 +18,8 @@ if reverse == True:
 max_length = 5
 
 # Seq2Seq architecture
-cell_type = 'GRU' #'LSTM'
-latent_dim = 128 #1024 # Latent dimensionality of the encoding space.
+cell_type = 'LSTM' #'GRU'
+latent_dim = 128 #256 # Latent dimensionality of the encoding space.
 
 # Datasets
 validation_split = 0.2

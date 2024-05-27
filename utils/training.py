@@ -136,19 +136,29 @@ class EncoderRNN(nn.Module):
         self.hidden_size = hidden_size
 
         self.embedding = nn.Embedding(input_size, hidden_size)
-        self.gru = nn.GRU(hidden_size, hidden_size, batch_first=True)
+        
+        if config.cell_type == "GRU":
+            self.rnn = nn.GRU(hidden_size, hidden_size, batch_first=True)
+        elif config.cell_type == "LSTM":
+            self.rnn = nn.LSTM(hidden_size, hidden_size, batch_first=True)
+
         self.dropout = nn.Dropout(dropout_p)
 
     def forward(self, input):
         embedded = self.dropout(self.embedding(input))
-        output, hidden = self.gru(embedded)
+        output, hidden = self.rnn(embedded)
         return output, hidden
     
 class DecoderRNN(nn.Module):
     def __init__(self, hidden_size, output_size):
         super(DecoderRNN, self).__init__()
         self.embedding = nn.Embedding(output_size, hidden_size)
-        self.gru = nn.GRU(hidden_size, hidden_size, batch_first=True)
+
+        if config.cell_type == "GRU":
+            self.rnn = nn.GRU(hidden_size, hidden_size, batch_first=True)
+        elif config.cell_type == "LSTM":
+            self.rnn = nn.LSTM(hidden_size, hidden_size, batch_first=True)
+
         self.out = nn.Linear(hidden_size, output_size)
 
     def forward(self, encoder_outputs, encoder_hidden, target_tensor=None):
@@ -176,7 +186,7 @@ class DecoderRNN(nn.Module):
     def forward_step(self, input, hidden):
         output = self.embedding(input)
         output = F.relu(output)
-        output, hidden = self.gru(output, hidden)
+        output, hidden = self.rnn(output, hidden)
         output = self.out(output)
         return output, hidden
     
@@ -224,13 +234,6 @@ def train_epoch(dataloader, encoder, decoder, encoder_optimizer,
                   f'Accuracy: {acc:.4f}, '
                   f'WER: {wer:.4f}, '
                   f'PER: {per:.4f}')
-
-    """# If it is the last epoch, save the model visualization
-    if n_epoch == config.epochs:
-        y = encoder(input_tensor)
-        make_dot(y, params=dict(list(encoder.named_parameters()))).render(config.png_encoder_path, format="png")
-        y, _, _ = decoder(encoder_outputs, encoder_hidden, target_tensor)
-        make_dot(y, params=dict(list(decoder.named_parameters()))).render(config.png_decoder_path, format="png")"""
 
     average_loss = total_loss / len(dataloader)  # Calculate average loss over all batches
     average_acc = total_acc / len(dataloader)   # Calculate average accuracy over all batches
@@ -306,6 +309,8 @@ def trainSeq2Seq(train_loader, val_loader, encoder, decoder,
     losses_train, acc_train, wer_train, per_train = [],[],[],[]
     losses_val, acc_val, wer_val, per_val = [],[],[],[]
 
+    print(f"Cell type: {config.cell_type}")
+    print(f"Hidden dimensions: {config.latent_dim}\n")
     # Define optimizer and criterion
     encoder_optimizer = getattr(torch.optim, config.opt)(encoder.parameters(), lr=config.learning_rate)
     print("Encoder optimizer:",encoder_optimizer)
