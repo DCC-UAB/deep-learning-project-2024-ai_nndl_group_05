@@ -2,7 +2,7 @@
 #--------------CONFIGURATION----------------#
 #-------------------------------------------#
 
-reverse = True
+reverse = False
 
 if reverse == False:
     language = "eng-spa"
