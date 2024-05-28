@@ -1,0 +1,21 @@
+name: projectDL
+channels:
+  - defaults
+dependencies:
+  - python
+  - conda=24.5.0
+  - numpy
+  - matplotlib
+  - pytorch
+  - tensorboard
+  - pytorch::torchvision
+  - onnx
+  - conda-forge::wandb
+  - onnxruntime
+  - ipykernel
+  - pandas
+  - graphviz
+  - jiwer
+  - pip:
+    - torch
+    - torchviz
