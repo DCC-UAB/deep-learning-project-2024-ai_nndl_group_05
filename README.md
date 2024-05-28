@@ -79,7 +79,7 @@ python main.py
 ## Contributors
 Sara Martín Núñez -- Sara.MartinNu@autonoma.cat
 Lara Rodríguez Cuenca -- Lara.RodriguezC@autonoma.cat
-Iván Martín  Campoy -- Ivan.MartinC@autonoma.cat
+Iván Martín  Campoy -- ivan.martinca@autonoma.cat
 Aina Navarro Rafols -- Aina.NavarroR@autonoma.cat
 
 Neural Network and Deep Learning
