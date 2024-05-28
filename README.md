@@ -9,6 +9,7 @@ Our goal is to create a translation model that can convert text from english-spa
 
 ## Code structure
 * Models
+
     It has photos of the Encoder and Decoder part of our model.  It also has, for each translation (eng-spa and spa-eng) and for each type of model (LSTM and GRU) some csv files with the data preprocessed and extracted from the dataset before entering the model.
 
 * Spa - eng
