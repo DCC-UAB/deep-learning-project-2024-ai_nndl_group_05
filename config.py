@@ -18,7 +18,7 @@ if reverse == True:
 max_length = 15
 
 # Seq2Seq architecture
-cell_type = 'LSTM' #'GRU'
+cell_type = 'GRU' #'GRU'
 latent_dim = 256 #256 # Latent dimensionality of the encoding space.
 
 # Datasets
@@ -32,7 +32,7 @@ learning_rate = 0.001 #0.0001
 criterion = 'NLLLoss' #'CrossEntropyLoss'
 ltsm_layers = 2
 dropouts = 0.2
-opt = 'RMSprop' #'RMSprop'
+opt = 'Adam' #'RMSprop'
 name = f'{cell_type}-latent_dim={latent_dim},{criterion},opt={opt},lr={learning_rate},dropout={dropouts}'
 
 
