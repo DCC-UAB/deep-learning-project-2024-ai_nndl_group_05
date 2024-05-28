@@ -1,6 +1,6 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-24ddc0f5d75046c5622901739e7c5dd533143b0c8e959d652212380cedb1ea36.svg)](https://classroom.github.com/a/jPcQNmHU)
 [![Open in Visual Studio Code](https://classroom.github.com/assets/open-in-vscode-718a45dd9cf7e7f842a935f5ebbe5719a5e09af4491e668f4dbf3b35d5cca122.svg)](https://classroom.github.com/online_ide?assignment_repo_id=14935852&assignment_repo_type=AssignmentRepo)
-# XNAP-Project title (replace it by the title of your project)
+# XNAP-Machine Translation
 Write here a short summary about your project. The text must include a short introduction and the targeted goals
 
 ## Code structure
@@ -23,7 +23,11 @@ python main.py
 
 ## Contributors
 Write here the name and UAB mail of the group members
+Sara Martín Núñez -- Sara.MartinNu@autonoma.cat
+Lara Rodríguez Cuenca -- Lara.RodriguezC@autonoma.cat
+Iván Martín  Campoy -- Ivan.MartinC@autonoma.cat
+Aina Navarro Rafols -- Aina.NavarroR@autonoma.cat
 
-Xarxes Neuronals i Aprenentatge Profund
-Grau de __Write here the name of your estudies (Artificial Intelligence, Data Engineering or Computational Mathematics & Data analyitics)__, 
-UAB, 2023
+Neural Network and Deep Learning
+Degree in Artificial Intelligence
+UAB, 2023-24
