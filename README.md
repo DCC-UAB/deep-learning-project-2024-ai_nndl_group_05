@@ -22,7 +22,6 @@ python main.py
 
 
 ## Contributors
-Write here the name and UAB mail of the group members
 Sara Martín Núñez -- Sara.MartinNu@autonoma.cat
 Lara Rodríguez Cuenca -- Lara.RodriguezC@autonoma.cat
 Iván Martín  Campoy -- Ivan.MartinC@autonoma.cat
