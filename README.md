@@ -13,24 +13,30 @@ Our goal is to create a translation model that can convert text from english-spa
     It has photos of the Encoder and Decoder part of our model.  It also has, for each translation (eng-spa and spa-eng) and for each type of model (LSTM and GRU) some csv files with the data preprocessed and extracted from the dataset before entering the model.
 
 * Spa - eng
+
     It containts the raw data, composed by some sentences in spanish and english.
 
 * utils
+
     The folder has three .py inside.
     - data.py is used to preprocess the data in order to enter to the model
     - training.py is the loop of training the model
     - test.py is the loop of testing the model
 
 * wandb
+
     The plots and figures of the data when the model is trained is stored in order for the Weight and Bias web application to plot the data.
 
 * congif.py
+
     The parameters of our model are initialized
 
 * environment.yml
+
     The dependencies necessaries to run our project
 
 * main.py
+
     The main file, where all the project would be executed
 
 ## How To Use
