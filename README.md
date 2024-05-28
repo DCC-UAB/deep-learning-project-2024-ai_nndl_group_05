@@ -22,6 +22,7 @@ Our goal is to create a translation model that can convert text from english-spa
     - data.py is used to preprocess the data in order to enter to the model
     - training.py is the loop of training the model
     - test.py is the loop of testing the model
+    For more specific and technical information, go to *MODEL_SPECIFICATIONS.md* or follow this [link](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/blob/main/MODEL_SPECIFICATIONS.md).
 
 * wandb
 
