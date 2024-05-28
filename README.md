@@ -9,7 +9,7 @@ Our goal is to create a translation model that can convert text from one languag
 
 ## Code structure
 * Models
-    The first folder **models** contains photos of the Encoder and Decoder part of our model.  It also has, for each translation (eng-spa and spa-eng) and for each type of model (LSTM and GRU) some csv files with the data preprocessed and extracted from the dataset before entering the model.
+    It has photos of the Encoder and Decoder part of our model.  It also has, for each translation (eng-spa and spa-eng) and for each type of model (LSTM and GRU) some csv files with the data preprocessed and extracted from the dataset before entering the model.
 
 * Spa - eng
     It containts the raw data, composed by some sentences in spanish and english.
