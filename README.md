@@ -3,7 +3,7 @@
 # XNAP-Machine Translation
 Automatic machine translation model from one text to another
 
-Our goal is to create a translation model that can convert text from english-spanish and spanish-english. The model it's basen in RNN and have two  option of cell types: LSTM and GRU
+Our goal is to create a translation model that can convert text from english-spanish and spanish-english. The model is based in RNN and have two  option of cell types: LSTM and GRU
 
 
 
