@@ -24,6 +24,9 @@ $ conda env create --file environment.yml
 
 # Activating the environment
 $ conda activate xnap-example
+
+# For running the project
+py main.py
 ```
 
 ## Example Code
