@@ -65,6 +65,7 @@ def wer(reference, hypothesis, eos_token="EOS"):
         total_error += error
     wer_value = total_error / total_words if total_words > 0 else 0
     return wer_value
+
 def per(reference, hypothesis, eos_token="EOS"):
     total_error = 0
     total_words = 0  
@@ -140,9 +141,9 @@ def translate(input_lang, output_lang,
 
         return words
 
-    input_words = [input_lang.index2word[idx.item()] for idx in input_tensor]
+    input_words = [input_lang.index2word[idx.item()] for idx in input_tensor if idx!=0]
     decoded_words = get_words(output_lang, decoded_outputs)
-    target_words = [output_lang.index2word[idx.item()] for idx in target_tensor]
+    target_words = [output_lang.index2word[idx.item()] for idx in target_tensor if idx!=0]
 
     return input_words, decoded_words, target_words
 
