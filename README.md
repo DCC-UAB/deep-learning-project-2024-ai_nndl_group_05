@@ -32,9 +32,6 @@ Our goal is to create a translation model that can convert text from one languag
 * main.py
     The main file, where all the project would be executed
 
-You must create as many folders as you consider. You can use the proposed structure or replace it by the one in the base code that you use as starting point. Do not forget to add Markdown files as needed to explain well the code and how to use it.
-
-
 ## How To Use
 To clone and run this project, you will need Git and Conda installed on your computer.
 An alternative of conda is have installed the packages on the environment.yml file.
