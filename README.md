@@ -9,11 +9,17 @@ Here is an image to have an idea of what the model does:
 ![Model Image](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/blob/main/images/image_model.png?raw=true)
 
 ## Code structure
-* Models
+* images
+
+    It contain a photo of how the encoder-decoder model works. 
+    
+    It also have the images of the plots obtained in the plots.py
+
+* models
 
     It has photos of the Encoder and Decoder part of our model.  It also has, for each translation (eng-spa and spa-eng) and for each type of model (LSTM and GRU) some csv files with the translated sentences after passing through the model.
 
-* Spa - eng
+* spa - eng
 
     It containts the raw data, composed by some sentences in spanish and english.
 
@@ -21,10 +27,13 @@ Here is an image to have an idea of what the model does:
 
     The folder has three .py inside.
     - data.py is used to preprocess the data in order to enter it to the model
+    - plots.py make plots of the hyperparameter exploration
     - training.py is the loop of training the model
-    - test.py is the loop of testing the model
+    - testing.py is the loop of testing the model
     
     For more specific and technical information, go to *MODEL_SPECIFICATIONS.md* or follow this [link](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/blob/main/MODEL_SPECIFICATIONS.md).
+    
+    Also, if you have curiosity for the hyperparameters we chose, in this [link](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/blob/main/HYPERPARAMETER_EXPLORATION.md) you have all the process we made (or go to the file HYPERPARAMETER_EXPLORATION.md).
 
 * wandb
 
@@ -41,6 +50,11 @@ Here is an image to have an idea of what the model does:
 * main.py
 
     The main file, where all the project would be executed
+
+* play_telephone.py
+
+    The main idea of this file is compute a transcription from one language to the other and, with the result obtained, do the inverse transcription in order to see how the model performs.
+ 
 
 ## How To Use
 To clone and run this project, you will need Git and Conda installed on your computer.
