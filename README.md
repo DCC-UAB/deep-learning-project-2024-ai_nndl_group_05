@@ -5,7 +5,7 @@ Automatic machine translation model from one sentence to another.
 
 Our goal is to create a translation model that can convert sentences from english-spanish and spanish-english. The model is based in RNN and have two option of cell types: LSTM and GRU.
 
-Here is an image to have more or less what the model does:
+Here is an image to have an idea of what the model does:
 ![image](image.png)
 
 
