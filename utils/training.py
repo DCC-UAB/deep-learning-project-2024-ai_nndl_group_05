@@ -119,7 +119,38 @@ def evaluate_wer(predictions, targets, output_lang, eos_token="EOS"):
         total_wer += wer_value
     average_wer = total_wer / batch_size
     return average_wer
+def cer(reference, hypothesis, eos_token="EOS"):
+    total_error = 0
+    total_chars = 0
+    if reference != eos_token and hypothesis != eos_token:  
+        error = jiwer.wer(reference, hypothesis)
+        total_chars += len(reference)
+        total_error += error
+    cer_value = total_error / total_chars if total_chars > 0 else 0
+    return cer_value
+    
+def evaluate_cer(predictions, targets, output_lang, eos_token):
+    def tensor_to_chars(tensor, lang, eos_token):
+        chars = []
+        for idx in tensor:
+            char = lang.index2char[idx.item()]
+            if char == eos_token:
+                break
+            chars.append(char)
+        return chars
 
+    total_cer = 0
+    batch_size = predictions.size(0)
+    for i in range(batch_size):
+        predicted_ids = predictions[i].max(dim=-1)[1] 
+        reference_chars = tensor_to_chars(targets[i], output_lang, eos_token)
+        hypothesis_chars = tensor_to_chars(predicted_ids, output_lang, eos_token)
+        reference_str = ''.join(reference_chars)
+        hypothesis_str = ''.join(hypothesis_chars)
+        cer_value = cer(reference_str, hypothesis_str)
+        total_cer += cer_value
+    average_cer = total_cer / batch_size
+    return average_cer
 
 def translate(input_lang, output_lang, 
               input_tensor, decoded_outputs, target_tensor):
@@ -228,6 +259,7 @@ def train_epoch(dataloader, encoder, decoder, encoder_optimizer,
     total_loss = 0
     total_acc = 0
     total_wer = 0
+    total_cer = 0
 
     for batch_idx, data in enumerate(dataloader):
         input_tensor, target_tensor = data
@@ -254,7 +286,10 @@ def train_epoch(dataloader, encoder, decoder, encoder_optimizer,
 
         if config.model == "words":
             wer = evaluate_wer(decoder_outputs, target_tensor, output_lang)
-            total_wer += wer  
+            total_wer += wer 
+        if config.model == "chars":
+            cer_value = evaluate_cer(decoder_outputs, target_tensor, output_lang, EOS_token)
+            total_cer +=cer_value
 
         if batch_idx % config.batch_size == 0:
             if config.model == "words":
@@ -265,10 +300,12 @@ def train_epoch(dataloader, encoder, decoder, encoder_optimizer,
             elif config.model == "chars":
                 print(f'    Step [{batch_idx+1}/{len(dataloader)}], ' 
                   f'Loss: {loss.item():.4f}, '
-                  f'Accuracy: {acc:.4f} ')
+                  f'Accuracy: {acc:.4f}, '
+                  f'CER: {cer:.4f}')
 
     average_loss = total_loss / len(dataloader)  # Calculate average loss over all batches
     average_acc = total_acc / len(dataloader)   # Calculate average accuracy over all batches
+    average_cer = total_cer / len(dataloader)   # Calculate average CER over all batches
     
     if config.model == "words":
         average_wer = total_wer / len(dataloader)  # Calculate average WER over all batches
@@ -276,7 +313,7 @@ def train_epoch(dataloader, encoder, decoder, encoder_optimizer,
         return average_loss, average_acc, average_wer
     
     elif config.model == "chars":
-        return average_loss, average_acc, None
+        return average_loss, average_acc, average_cer
 
 
 def val_epoch(dataloader, encoder, decoder, criterion,
@@ -285,6 +322,7 @@ def val_epoch(dataloader, encoder, decoder, criterion,
     total_loss = 0
     total_acc = 0
     total_wer = 0 
+    total_cer = 0
 
     for batch_idx, data in enumerate(dataloader):
         
@@ -308,6 +346,9 @@ def val_epoch(dataloader, encoder, decoder, criterion,
             # Compute WER for the current batch
             wer = evaluate_wer(decoder_outputs, target_tensor, output_lang)
             total_wer += wer  # Sum the batch-wise average WER
+        if config.model == "chars":
+            cer_value = evaluate_cer(decoder_outputs, target_tensor, output_lang, EOS_token)
+            total_cer +=cer_value
 
         if batch_idx % config.batch_size == 0:
             if config.model == "words":
@@ -316,9 +357,10 @@ def val_epoch(dataloader, encoder, decoder, criterion,
                     f'Accuracy: {acc:.4f}, '
                     f'WER: {wer:.4f}')
             elif config.model == "chars":
-                print(f'        Step [{batch_idx+1}/{len(dataloader)}], ' 
+                print(f'    Step [{batch_idx+1}/{len(dataloader)}], ' 
                   f'Loss: {loss.item():.4f}, '
-                  f'Accuracy: {acc:.4f} ')
+                  f'Accuracy: {acc:.4f}, '
+                  f'CER: {cer:.4f}')
 
             # Get translation examples
             input_words, decoded_words, target_words = translate(input_lang, output_lang, 
@@ -332,13 +374,14 @@ def val_epoch(dataloader, encoder, decoder, criterion,
 
     average_loss = total_loss / len(dataloader)
     average_acc = total_acc / len(dataloader)
-
+    average_cer = total_cer / len(dataloader)   
+                  
     if config.model == "words":
         average_wer = total_wer / len(dataloader) 
         return average_loss, average_acc, average_wer
     
     elif config.model == "chars":
-        return average_loss, average_acc, None
+        return average_loss, average_acc, average_cer
 
 
 # TRAINING LOOP
@@ -348,8 +391,8 @@ def trainSeq2Seq(train_loader, val_loader, encoder, decoder,
     
     start = time.time()
     
-    losses_train, acc_train, wer_train = [],[],[]
-    losses_val, acc_val, wer_val = [],[],[]
+    losses_train, acc_train, error_rate_train = [],[],[]
+    losses_val, acc_val, error_rate_val = [],[],[]
 
     print(f"Cell type: {config.cell_type}")
     print(f"Hidden dimensions: {config.latent_dim}\n")
@@ -371,29 +414,30 @@ def trainSeq2Seq(train_loader, val_loader, encoder, decoder,
 
         print("\nEpoch:",epoch)
 
-        loss, acc, wer = train_epoch(train_loader, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, output_lang, n_epoch=epoch)
+        loss, acc, error_rate = train_epoch(train_loader, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, output_lang, n_epoch=epoch)
 
         losses_train.append(loss)
         acc_train.append(acc)
-        wer_train.append(wer)
+        error_rate_train.append(error_rate)
 
         if config.model == "words":
             print(f'    Time: {timeSince(start, epoch / config.epochs)}, '
                 f'Epochs completed: {epoch / config.epochs * 100}%, '
                 f'Epoch loss: {loss:.4f}, '
                 f'Epoch accuracy: {acc:.4f}, '
-                f'Epoch WER: {wer:.4f}')
+                f'Epoch WER: {error_rate:.4f}')
         elif config.model == "chars":
             print(f'    Time: {timeSince(start, epoch / config.epochs)}, '
-              f'Epochs completed: {epoch / config.epochs * 100}%, '
-              f'Epoch loss: {loss:.4f}, '
-              f'Epoch accuracy: {acc:.4f}')
+                f'Epochs completed: {epoch / config.epochs * 100}%, '
+                f'Epoch loss: {loss:.4f}, '
+                f'Epoch accuracy: {acc:.4f}, '
+                f'Epoch CER: {error_rate:.4f}')
 
         if config.do_wandb:
             if config.model == "words":
-                wandb.log({'epoch': epoch, 'train/loss': loss, 'train/accuracy': acc, 'train/WER': wer})
+                wandb.log({'epoch': epoch, 'train/loss': loss, 'train/accuracy': acc, 'train/WER': error_rate})
             elif config.model == "chars":
-                wandb.log({'epoch': epoch, 'train/loss': loss, 'train/accuracy': acc})
+                wandb.log({'epoch': epoch, 'train/loss': loss, 'train/accuracy': acc, 'train/CER': error_rate})
 
 
         # Validation
@@ -405,17 +449,17 @@ def trainSeq2Seq(train_loader, val_loader, encoder, decoder,
             print(f'\n   Validation: epoch {epoch}')
             
             #val_loss = val_epoch(val_loader, encoder, decoder, criterion, input_lang, output_lang)
-            val_loss, val_acc, val_wer = val_epoch(val_loader, encoder, decoder, criterion, input_lang, output_lang)
+            val_loss, val_acc, val_error_rate = val_epoch(val_loader, encoder, decoder, criterion, input_lang, output_lang)
 
             losses_val.append(val_loss)
             acc_val.append(val_acc)
-            wer_val.append(val_wer)
+            error_rate_val.append(val_error_rate)
 
             if config.do_wandb:
                 if config.model == "words":
-                    wandb.log({'epoch': epoch, 'validation/loss': val_loss, 'validation/accuracy': val_acc, 'validation/WER': val_wer})
+                    wandb.log({'epoch': epoch, 'validation/loss': val_loss, 'validation/accuracy': val_acc, 'validation/WER': val_error_rate})
                 elif config.model == "chars":
-                    wandb.log({'epoch': epoch, 'validation/loss': val_loss, 'validation/accuracy': val_acc})
+                    wandb.log({'epoch': epoch, 'validation/loss': val_loss, 'validation/accuracy': val_acc, 'validation/CER': val_error_rate})
                     
         encoder.train()
         decoder.train()
