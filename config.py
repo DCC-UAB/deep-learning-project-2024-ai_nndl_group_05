@@ -64,11 +64,19 @@ save_models = False # Recommended to False.
 
 # If save_models == True: this paths must exists:
 
-# Models
-encoder_path = f'./models/{path}/encoder.h5'
-decoder_path =f'./models/{path}/decoder.h5'
+if save_models: # Paths to distinguish between different models.
+    # Models
+    encoder_path = f'./models/{path}/encoder.h5'
+    decoder_path =f'./models/{path}/decoder.h5'
 
-# Translation csv
-results_path_train = f'./models/{path}/traindata_translations.csv'
-results_path_val = f'./models/{path}/valdata_translations.csv'
-results_path_test = f'./models/{path}/testdata_translations.csv'
+    # Translation csv
+    results_path_train = f'./models/{path}/traindata_translations.csv'
+    results_path_val = f'./models/{path}/valdata_translations.csv'
+    results_path_test = f'./models/{path}/testdata_translations.csv'
+
+else: # Simple path
+    encoder_path = f'./models/encoder.h5'
+    decoder_path =f'./models/decoder.h5'
+    results_path_train = f'./models/traindata_translations.csv'
+    results_path_val = f'./models/valdata_translations.csv'
+    results_path_test = f'./models/testdata_translations.csv'

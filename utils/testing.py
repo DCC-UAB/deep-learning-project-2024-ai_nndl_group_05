@@ -108,12 +108,11 @@ def test(input_lang, output_lang, data_loader, type='test'):
     # Store translated sentences in csv
     df = pd.DataFrame(translated_sentences, columns=['Input', 'Output', 'Target'])
     
-    if config.save_models:
-        if type == 'train':
-            path = config.results_path_train
-        elif type == 'val':
-            path = config.results_path_val
-        elif type == 'test':
-            path = config.results_path_test
+    if type == 'train':
+        path = config.results_path_train
+    elif type == 'val':
+        path = config.results_path_val
+    elif type == 'test':
+        path = config.results_path_test
 
-        df.to_csv(path, index=False)
+    df.to_csv(path, index=False)

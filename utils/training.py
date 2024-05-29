@@ -421,9 +421,8 @@ def trainSeq2Seq(train_loader, val_loader, encoder, decoder,
         decoder.train()
 
     # Save the trained models
-    if config.save_models:
-        torch.save(encoder.state_dict(), config.encoder_path)
-        torch.save(decoder.state_dict(), config.decoder_path)
+    torch.save(encoder.state_dict(), config.encoder_path)
+    torch.save(decoder.state_dict(), config.decoder_path)
 
 
 
