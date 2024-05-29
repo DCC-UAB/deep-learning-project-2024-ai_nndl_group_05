@@ -25,7 +25,7 @@ if model == "words":
     elif reverse == True:
         project = "Machine_Translation_words_2"
     
-    max_length = 5 # Max number of words in sentence: 15
+    max_length = 15 # Max number of words in sentence: 15
 
 elif model == "chars":
     if reverse == False:
