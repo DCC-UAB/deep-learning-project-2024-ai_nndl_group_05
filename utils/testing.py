@@ -4,7 +4,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 from utils.training import EncoderRNN, DecoderRNN
-from utils.training import compute_accuracy, evaluate_wer, translate
+from utils.training import compute_accuracy, evaluate_wer, translate, evaluate_cer
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -106,7 +106,7 @@ def test(input_lang, output_lang, data_loader, type='test'):
 
         
         print(f'Average loss of {type} data: {avg_loss:.4f}, '
-            f'Average accuracy of {type} data: {avg_acc:.4f},'
+            f'Average accuracy of {type} data: {avg_acc:.4f}, '
             f'Average CER of {type} data: {avg_cer:.4f}')
         # Store loss and accuracy evolution
         if type == 'test':
