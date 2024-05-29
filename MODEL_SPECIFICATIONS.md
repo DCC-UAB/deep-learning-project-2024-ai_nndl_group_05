@@ -76,6 +76,7 @@ In summary, the process would be:
 
 #### DECODER
 - Initialization (__init__ method):
+
     Parameters:
         
         - hidden_size: The size of the hidden state in the GRU/LSTM.

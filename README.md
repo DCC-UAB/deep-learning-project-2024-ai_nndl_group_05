@@ -25,7 +25,7 @@ Here is an image to have an idea of what the model does:
     - test.py is the loop of testing the model
     
     For more specific and technical information, go to *MODEL_SPECIFICATIONS.md* or follow this [link](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/blob/main/MODEL_SPECIFICATIONS.md).
-    Also, if you have curiosity for the hyperparameters we chose, in this [document]() you have all the process we made (or go to the file HYPERPARAMETER_EXPLORATION.md).
+    Also, if you have curiosity for the hyperparameters we chose, in this [document]('https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/blob/main/HYPERPARAMETER_EXPLORATION.md') you have all the process we made (or go to the file HYPERPARAMETER_EXPLORATION.md).
 
 * wandb
 
