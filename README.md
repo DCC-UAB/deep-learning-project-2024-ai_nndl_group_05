@@ -6,8 +6,7 @@ Automatic machine translation model from one sentence to another.
 Our goal is to create a translation model that can convert sentences from english-spanish and spanish-english. The model is based in RNN and have two option of cell types: LSTM and GRU.
 
 Here is an image to have an idea of what the model does:
-![Model Image]('https://githubusercontent.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/blob/main/images/image_model.png?raw=true')
-
+![Model Image](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/blob/main/images/image_model.png?raw=true)
 
 ## Code structure
 * Models
@@ -24,6 +23,7 @@ Here is an image to have an idea of what the model does:
     - data.py is used to preprocess the data in order to enter it to the model
     - training.py is the loop of training the model
     - test.py is the loop of testing the model
+    
     For more specific and technical information, go to *MODEL_SPECIFICATIONS.md* or follow this [link](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/blob/main/MODEL_SPECIFICATIONS.md).
 
 * wandb
@@ -64,6 +64,12 @@ $ conda activate xnap-example
 # For running the project
 py main.py
 ```
+
+In case that you can't see all the branches, run the command:
+````bash
+git fetch -all
+```
+
 
 ## Contributors
 Sara Martín Núñez -- Sara.MartinNu@autonoma.cat
