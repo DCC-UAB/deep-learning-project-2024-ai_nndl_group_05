@@ -17,6 +17,7 @@ dependencies:
   - graphviz
   - jiwer
   - seaborn
+  - jmcmurray::os
   - pip:
     - torch
     - torchviz
