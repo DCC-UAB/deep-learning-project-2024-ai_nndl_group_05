@@ -16,6 +16,7 @@ dependencies:
   - pandas
   - graphviz
   - jiwer
+  - seaborn
   - pip:
     - torch
     - torchviz
