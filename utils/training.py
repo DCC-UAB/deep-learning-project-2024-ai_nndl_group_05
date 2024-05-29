@@ -119,6 +119,7 @@ def evaluate_wer(predictions, targets, output_lang, eos_token="EOS"):
         total_wer += wer_value
     average_wer = total_wer / batch_size
     return average_wer
+
 def cer(reference, hypothesis, eos_token="EOS"):
     total_error = 0
     total_chars = 0
@@ -129,12 +130,12 @@ def cer(reference, hypothesis, eos_token="EOS"):
     cer_value = total_error / total_chars if total_chars > 0 else 0
     return cer_value
     
-def evaluate_cer(predictions, targets, output_lang, eos_token):
-    def tensor_to_chars(tensor, lang, eos_token):
+def evaluate_cer(predictions, targets, output_lang, eos_token="EOS"):
+    def tensor_to_chars(tensor, lang):
         chars = []
         for idx in tensor:
             char = lang.index2char[idx.item()]
-            if char == eos_token:
+            if char == EOS_token:
                 break
             chars.append(char)
         return chars
@@ -143,8 +144,8 @@ def evaluate_cer(predictions, targets, output_lang, eos_token):
     batch_size = predictions.size(0)
     for i in range(batch_size):
         predicted_ids = predictions[i].max(dim=-1)[1] 
-        reference_chars = tensor_to_chars(targets[i], output_lang, eos_token)
-        hypothesis_chars = tensor_to_chars(predicted_ids, output_lang, eos_token)
+        reference_chars = tensor_to_chars(targets[i], output_lang)
+        hypothesis_chars = tensor_to_chars(predicted_ids, output_lang)
         reference_str = ''.join(reference_chars)
         hypothesis_str = ''.join(hypothesis_chars)
         cer_value = cer(reference_str, hypothesis_str)
@@ -288,7 +289,7 @@ def train_epoch(dataloader, encoder, decoder, encoder_optimizer,
             wer = evaluate_wer(decoder_outputs, target_tensor, output_lang)
             total_wer += wer 
         if config.model == "chars":
-            cer_value = evaluate_cer(decoder_outputs, target_tensor, output_lang, EOS_token)
+            cer_value = evaluate_cer(decoder_outputs, target_tensor, output_lang)
             total_cer +=cer_value
 
         if batch_idx % config.batch_size == 0:
@@ -301,18 +302,18 @@ def train_epoch(dataloader, encoder, decoder, encoder_optimizer,
                 print(f'    Step [{batch_idx+1}/{len(dataloader)}], ' 
                   f'Loss: {loss.item():.4f}, '
                   f'Accuracy: {acc:.4f}, '
-                  f'CER: {cer:.4f}')
+                  f'CER: {cer_value:.4f}')
 
     average_loss = total_loss / len(dataloader)  # Calculate average loss over all batches
     average_acc = total_acc / len(dataloader)   # Calculate average accuracy over all batches
-    average_cer = total_cer / len(dataloader)   # Calculate average CER over all batches
+    
     
     if config.model == "words":
         average_wer = total_wer / len(dataloader)  # Calculate average WER over all batches
-       
         return average_loss, average_acc, average_wer
     
     elif config.model == "chars":
+        average_cer = total_cer / len(dataloader)   # Calculate average CER over all batches
         return average_loss, average_acc, average_cer
 
 
@@ -347,7 +348,7 @@ def val_epoch(dataloader, encoder, decoder, criterion,
             wer = evaluate_wer(decoder_outputs, target_tensor, output_lang)
             total_wer += wer  # Sum the batch-wise average WER
         if config.model == "chars":
-            cer_value = evaluate_cer(decoder_outputs, target_tensor, output_lang, EOS_token)
+            cer_value = evaluate_cer(decoder_outputs, target_tensor, output_lang)
             total_cer +=cer_value
 
         if batch_idx % config.batch_size == 0:
@@ -360,7 +361,7 @@ def val_epoch(dataloader, encoder, decoder, criterion,
                 print(f'    Step [{batch_idx+1}/{len(dataloader)}], ' 
                   f'Loss: {loss.item():.4f}, '
                   f'Accuracy: {acc:.4f}, '
-                  f'CER: {cer:.4f}')
+                  f'CER: {cer_value:.4f}')
 
             # Get translation examples
             input_words, decoded_words, target_words = translate(input_lang, output_lang, 
@@ -374,13 +375,13 @@ def val_epoch(dataloader, encoder, decoder, criterion,
 
     average_loss = total_loss / len(dataloader)
     average_acc = total_acc / len(dataloader)
-    average_cer = total_cer / len(dataloader)   
                   
     if config.model == "words":
         average_wer = total_wer / len(dataloader) 
         return average_loss, average_acc, average_wer
     
     elif config.model == "chars":
+        average_cer = total_cer / len(dataloader)   
         return average_loss, average_acc, average_cer
 
 

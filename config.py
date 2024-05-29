@@ -2,7 +2,7 @@
 #--------------CONFIGURATION----------------#
 #-------------------------------------------#
 
-model = "words" #"chars"
+model = "chars" #"chars"
 do_wandb = False # Recommended to False.
 
 # Set language
@@ -25,7 +25,7 @@ if model == "words":
     elif reverse == True:
         project = "Machine_Translation_words_2"
     
-    max_length = 15 # Max number of words in sentence: 15
+    max_length = 5 # Max number of words in sentence: 15
 
 elif model == "chars":
     if reverse == False:
@@ -46,7 +46,7 @@ test_split = 0.2
 
 # Training process
 batch_size = 64  # Batch size for training.
-epochs = 20  # Number of epochs to train for.
+epochs = 2  # Number of epochs to train for.
 learning_rate = 0.001 #0.0001
 criterion = 'NLLLoss' #'CrossEntropyLoss'
 ltsm_layers = 2
