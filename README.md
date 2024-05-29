@@ -66,7 +66,7 @@ py main.py
 ```
 
 In case that you can't see all the branches, run the command:
-````bash
+```bash
 git fetch -all
 ```
 
