@@ -9,13 +9,14 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def loadModels(input_lang, output_lang):
     encoder_io = EncoderRNN(input_lang.n_words, config.latent_dim).to(device)
     decoder_io =  DecoderRNN(config.latent_dim, output_lang.n_words).to(device)
-    encoder_io.load_state_dict(torch.load('./play_telephone/encoder_eng-spa.h5'))
-    decoder_io.load_state_dict(torch.load('./play_telephone/decoder_eng-spa.h5', map_location=torch.device(device)))
-
+    encoder_io.load_state_dict(torch.load('./play_telephone/encoder_eng-spa.h5', map_location=torch.device('cpu')))
+    decoder_io.load_state_dict(torch.load('./play_telephone/decoder_eng-spa.h5', map_location=torch.device('cpu')))
+    
     encoder_oi = EncoderRNN(output_lang.n_words, config.latent_dim).to(device)
     decoder_oi =  DecoderRNN(config.latent_dim, input_lang.n_words).to(device)
-    encoder_oi.load_state_dict(torch.load('./play_telephone/encoder_spa-eng.h5', map_location=torch.device(device)))
-    decoder_oi.load_state_dict(torch.load('./play_telephone/decoder_spa-eng.h5', map_location=torch.device(device)))
+    encoder_oi.load_state_dict(torch.load('./play_telephone/encoder_spa-eng.h5', map_location=torch.device('cpu')))
+    decoder_oi.load_state_dict(torch.load('./play_telephone/decoder_spa-eng.h5', map_location=torch.device('cpu')))
+
     return encoder_io, decoder_io, encoder_oi, decoder_oi
 
 def get_random_batch(data_loader):
@@ -108,9 +109,14 @@ if __name__ == "__main__":
 
     if (config.model == "chars"):
         print("config.model must be set to 'words' to play.")
-    elif (config.reverse == True):
+    if (config.reverse == True):
         print("config.reverse must be set on False to play.")
-
+    if (config.latent_dim != 256):
+        print("config.latent_dim must be set to 256 to play.")
+    if (config.cell_type != "LSTM"):
+        print("config.cell_type must be set to LSTM to play.")
+    if (config.max_length != 15):
+        print("config.max_lenght must be set to 15 to play.")
     else:
         print("\n#----------------------------------------#")
         print("-------GETTING TEST DATALOADER------------")

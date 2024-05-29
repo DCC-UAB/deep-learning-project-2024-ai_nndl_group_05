@@ -37,7 +37,7 @@ elif model == "chars":
 
 
 # Seq2Seq architecture
-cell_type = 'GRU' #'GRU'
+cell_type = 'LSTM' #'GRU'
 latent_dim = 256 #256 # Latent dimensionality of the encoding space.
 
 # Datasets
@@ -46,7 +46,7 @@ test_split = 0.2
 
 # Training process
 batch_size = 64  # Batch size for training.
-epochs = 2  # Number of epochs to train for.
+epochs = 20  # Number of epochs to train for.
 learning_rate = 0.001 #0.0001
 criterion = 'NLLLoss' #'CrossEntropyLoss'
 ltsm_layers = 2
