@@ -65,6 +65,12 @@ $ conda activate xnap-example
 py main.py
 ```
 
+In case that you can't see all the branches, run the command:
+````bash
+git fetch -all
+```
+
+
 ## Contributors
 Sara Martín Núñez -- Sara.MartinNu@autonoma.cat
 Lara Rodríguez Cuenca -- Lara.RodriguezC@autonoma.cat
