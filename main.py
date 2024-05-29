@@ -24,7 +24,7 @@ config_defaults = {
 def create_wandb():
     wandb.init(
         # set the wandb project where this run will be logged
-        project="Machine_Translation_2",
+        project=config.project,
         # track hyperparameters and run metadata
         config=config_defaults,
         name = config.name,
@@ -35,8 +35,9 @@ def create_wandb():
 if __name__ == "__main__":
     
     # start a new wandb run to track this script
-    wandb.login(key="8090840539532ccc2f8ea5c1595fde6dbb57bf56")
-    create_wandb()
+    if config.do_wandb:
+        wandb.login(key="8090840539532ccc2f8ea5c1595fde6dbb57bf56")
+        create_wandb()
 
     # Data preprocessing
     print("\n#----------------------------------------#")

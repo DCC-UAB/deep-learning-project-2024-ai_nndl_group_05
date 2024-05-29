@@ -2,6 +2,10 @@
 #--------------CONFIGURATION----------------#
 #-------------------------------------------#
 
+model = "words" #"chars"
+do_wandb = True
+
+# Set language
 reverse = False
 
 if reverse == False:
@@ -14,8 +18,23 @@ if reverse == True:
     input_language = 'spa'
     output_language = 'eng'
 
+# Set wandb model name
+if model == "words":
+    if reverse == False:
+        project = "Machine_Translation_words"
+    elif reverse == True:
+        project = "Machine_Translation_words_2"
+    
+    max_length = 15 # Max number of words in sentence
 
-max_length = 15
+elif model == "chars":
+    if reverse == False:
+        project = "Machine_Translation_chars"
+    elif reverse == True:
+        project = "Machine_Translation_chars_2"
+
+    max_length = 40 # Max number of chars in sentence
+
 
 # Seq2Seq architecture
 cell_type = 'GRU' #'GRU'
@@ -37,7 +56,7 @@ name = f'{cell_type}-latent_dim={latent_dim},{criterion},opt={opt},lr={learning_
 
 
 # Paths
-path = f'{language}/{cell_type}'
+path = f'{model}/{language}/{cell_type}'
 data_path = './spa-eng/spa.txt' #139705 lines
 
 # Models
