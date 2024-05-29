@@ -51,6 +51,7 @@ def compute_accuracy(predictions, targets, output_lang, eos_token="EOS"):
     batch_size = predictions.size(0)
     total_correct = 0
     total_words = 0
+    total_chars = 0
     
     for i in range(batch_size):
         predicted_ids = predictions[i].max(dim=-1)[1]  # Get the predicted word indices
@@ -94,38 +95,6 @@ def wer(reference, hypothesis, eos_token="EOS"):
     wer_value = total_error / total_words if total_words > 0 else 0
     return wer_value
 
-def per(reference, hypothesis, eos_token="EOS"):
-    total_error = 0
-    total_words = 0  
-    for ref, hyp in zip(reference, hypothesis):
-        ref_chars = ''.join(' '.join(ref).split(eos_token)[0])
-        hyp_chars = ''.join(' '.join(hyp).split(eos_token)[0])
-        error = jiwer.wer(ref_chars, hyp_chars)
-        total_words += len(ref)
-        total_error += error
-    per_value = total_error / total_words if total_words > 0 else 0
-    return per_value
-
-def evaluate_per(predictions, targets, output_lang):
-    def tensor_to_words(tensor, lang):
-        words = []
-        for idx in tensor:
-            words.append(lang.index2word[idx.item()])
-        return words
-
-    total_per = 0
-    batch_size = predictions.size(0)
-    
-    for i in range(batch_size):
-        predicted_ids = predictions[i].max(dim=-1)[1]  
-        reference_sentence = tensor_to_words(targets[i], output_lang)
-        hypothesis_sentence = tensor_to_words(predicted_ids, output_lang)
-        
-        per_value = per(reference_sentence, hypothesis_sentence)
-        total_per += per_value
-    
-    average_per = total_per / batch_size
-    return average_per
 
 def evaluate_wer(predictions, targets, output_lang, eos_token="EOS"):
     def tensor_to_words(tensor, lang, eos_token):
@@ -182,9 +151,9 @@ def translate(input_lang, output_lang,
         decoded = get_words(output_lang, decoded_outputs)
         target = [output_lang.index2word[idx.item()] for idx in target_tensor if idx!=0]
     elif config.model == "chars":
-        input = [input_lang.index2char[idx.item()] for idx in input_tensor]
+        input = [input_lang.index2char[idx.item()] for idx in input_tensor if idx!=0]
         decoded = get_chars(output_lang, decoded_outputs)
-        target = [output_lang.index2char[idx.item()] for idx in target_tensor]
+        target = [output_lang.index2char[idx.item()] for idx in target_tensor if idx!=0]
 
     return input, decoded, target
 
@@ -259,7 +228,6 @@ def train_epoch(dataloader, encoder, decoder, encoder_optimizer,
     total_loss = 0
     total_acc = 0
     total_wer = 0
-    total_per = 0
 
     for batch_idx, data in enumerate(dataloader):
         input_tensor, target_tensor = data
@@ -286,17 +254,14 @@ def train_epoch(dataloader, encoder, decoder, encoder_optimizer,
 
         if config.model == "words":
             wer = evaluate_wer(decoder_outputs, target_tensor, output_lang)
-            total_wer += wer 
-            per = evaluate_per(decoder_outputs, target_tensor, output_lang)
-            total_per += per  
+            total_wer += wer  
 
         if batch_idx % config.batch_size == 0:
             if config.model == "words":
                 print(f'    Step [{batch_idx+1}/{len(dataloader)}], ' 
                     f'Loss: {loss.item():.4f}, '
                     f'Accuracy: {acc:.4f}, '
-                    f'WER: {wer:.4f}, '
-                    f'PER: {per:.4f}')
+                    f'WER: {wer:.4f}')
             elif config.model == "chars":
                 print(f'    Step [{batch_idx+1}/{len(dataloader)}], ' 
                   f'Loss: {loss.item():.4f}, '
@@ -307,12 +272,11 @@ def train_epoch(dataloader, encoder, decoder, encoder_optimizer,
     
     if config.model == "words":
         average_wer = total_wer / len(dataloader)  # Calculate average WER over all batches
-        average_per= total_per / len(dataloader)  # Calculate average PER over all batches
-    
-        return average_loss, average_acc, average_wer, average_per
+       
+        return average_loss, average_acc, average_wer
     
     elif config.model == "chars":
-        return average_loss, average_acc, None, None
+        return average_loss, average_acc, None
 
 
 def val_epoch(dataloader, encoder, decoder, criterion,
@@ -321,7 +285,6 @@ def val_epoch(dataloader, encoder, decoder, criterion,
     total_loss = 0
     total_acc = 0
     total_wer = 0 
-    total_per = 0
 
     for batch_idx, data in enumerate(dataloader):
         
@@ -346,16 +309,12 @@ def val_epoch(dataloader, encoder, decoder, criterion,
             wer = evaluate_wer(decoder_outputs, target_tensor, output_lang)
             total_wer += wer  # Sum the batch-wise average WER
 
-            per = evaluate_per(decoder_outputs, target_tensor, output_lang)
-            total_per += per  # Sum the batch-wise BLEU score
-
         if batch_idx % config.batch_size == 0:
             if config.model == "words":
                 print(f'        Step [{batch_idx+1}/{len(dataloader)}], ' 
                     f'Loss: {loss.item():.4f}, '
                     f'Accuracy: {acc:.4f}, '
-                    f'WER: {wer:.4f}, '
-                    f'PER: {per:.4f}')
+                    f'WER: {wer:.4f}')
             elif config.model == "chars":
                 print(f'        Step [{batch_idx+1}/{len(dataloader)}], ' 
                   f'Loss: {loss.item():.4f}, '
@@ -376,11 +335,10 @@ def val_epoch(dataloader, encoder, decoder, criterion,
 
     if config.model == "words":
         average_wer = total_wer / len(dataloader) 
-        average_per = total_per/len(dataloader)
-        return average_loss, average_acc, average_wer, average_per
+        return average_loss, average_acc, average_wer
     
     elif config.model == "chars":
-        return average_loss, average_acc, None, None
+        return average_loss, average_acc, None
 
 
 # TRAINING LOOP
@@ -390,8 +348,8 @@ def trainSeq2Seq(train_loader, val_loader, encoder, decoder,
     
     start = time.time()
     
-    losses_train, acc_train, wer_train, per_train = [],[],[],[]
-    losses_val, acc_val, wer_val, per_val = [],[],[],[]
+    losses_train, acc_train, wer_train = [],[],[]
+    losses_val, acc_val, wer_val = [],[],[]
 
     print(f"Cell type: {config.cell_type}")
     print(f"Hidden dimensions: {config.latent_dim}\n")
@@ -413,20 +371,18 @@ def trainSeq2Seq(train_loader, val_loader, encoder, decoder,
 
         print("\nEpoch:",epoch)
 
-        loss, acc, wer, per = train_epoch(train_loader, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, output_lang, n_epoch=epoch)
+        loss, acc, wer = train_epoch(train_loader, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, output_lang, n_epoch=epoch)
 
         losses_train.append(loss)
         acc_train.append(acc)
         wer_train.append(wer)
-        per_train.append(per)
 
         if config.model == "words":
             print(f'    Time: {timeSince(start, epoch / config.epochs)}, '
                 f'Epochs completed: {epoch / config.epochs * 100}%, '
                 f'Epoch loss: {loss:.4f}, '
                 f'Epoch accuracy: {acc:.4f}, '
-                f'Epoch WER: {wer:.4f}, '
-                f'Epoch PER: {per:.4f}')
+                f'Epoch WER: {wer:.4f}')
         elif config.model == "chars":
             print(f'    Time: {timeSince(start, epoch / config.epochs)}, '
               f'Epochs completed: {epoch / config.epochs * 100}%, '
@@ -435,7 +391,7 @@ def trainSeq2Seq(train_loader, val_loader, encoder, decoder,
 
         if config.do_wandb:
             if config.model == "words":
-                wandb.log({'epoch': epoch, 'train/loss': loss, 'train/accuracy': acc, 'train/WER': wer, 'train/PER': per})
+                wandb.log({'epoch': epoch, 'train/loss': loss, 'train/accuracy': acc, 'train/WER': wer})
             elif config.model == "chars":
                 wandb.log({'epoch': epoch, 'train/loss': loss, 'train/accuracy': acc})
 
@@ -449,16 +405,15 @@ def trainSeq2Seq(train_loader, val_loader, encoder, decoder,
             print(f'\n   Validation: epoch {epoch}')
             
             #val_loss = val_epoch(val_loader, encoder, decoder, criterion, input_lang, output_lang)
-            val_loss, val_acc, val_wer, val_per = val_epoch(val_loader, encoder, decoder, criterion, input_lang, output_lang)
+            val_loss, val_acc, val_wer = val_epoch(val_loader, encoder, decoder, criterion, input_lang, output_lang)
 
             losses_val.append(val_loss)
             acc_val.append(val_acc)
             wer_val.append(val_wer)
-            per_val.append(val_per)
 
             if config.do_wandb:
                 if config.model == "words":
-                    wandb.log({'epoch': epoch, 'validation/loss': val_loss, 'validation/accuracy': val_acc, 'validation/WER': val_wer, 'validation/PER': val_per})
+                    wandb.log({'epoch': epoch, 'validation/loss': val_loss, 'validation/accuracy': val_acc, 'validation/WER': val_wer})
                 elif config.model == "chars":
                     wandb.log({'epoch': epoch, 'validation/loss': val_loss, 'validation/accuracy': val_acc})
                     
@@ -466,16 +421,21 @@ def trainSeq2Seq(train_loader, val_loader, encoder, decoder,
         decoder.train()
 
     # Save the trained models
-    torch.save(encoder.state_dict(), config.encoder_path)
-    torch.save(decoder.state_dict(), config.decoder_path)
+    if config.save_models:
+        torch.save(encoder.state_dict(), config.encoder_path)
+        torch.save(decoder.state_dict(), config.decoder_path)
 
 
 
 # MAIN
 def train(input_lang, output_lang, train_loader, val_loader):
     # Create encoder and decoder
-    encoder = EncoderRNN(input_lang.n_words, config.latent_dim).to(device)
-    decoder = DecoderRNN(config.latent_dim, output_lang.n_words).to(device)
+    if config.model == "words":
+        encoder = EncoderRNN(input_lang.n_words, config.latent_dim).to(device)
+        decoder = DecoderRNN(config.latent_dim, output_lang.n_words).to(device)
+    elif config.model == "chars":
+        encoder = EncoderRNN(input_size=input_lang.n_chars, hidden_size=config.latent_dim).to(device)
+        decoder = DecoderRNN(hidden_size=config.latent_dim, output_size=output_lang.n_chars).to(device)
     print("Encoder and decoder created.\n")
 
     # Train the decoder and encoder

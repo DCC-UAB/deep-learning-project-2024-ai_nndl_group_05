@@ -3,7 +3,7 @@
 #-------------------------------------------#
 
 model = "words" #"chars"
-do_wandb = True
+do_wandb = False # Recommended to False.
 
 # Set language
 reverse = False
@@ -25,7 +25,7 @@ if model == "words":
     elif reverse == True:
         project = "Machine_Translation_words_2"
     
-    max_length = 15 # Max number of words in sentence
+    max_length = 5 # Max number of words in sentence: 15
 
 elif model == "chars":
     if reverse == False:
@@ -33,7 +33,7 @@ elif model == "chars":
     elif reverse == True:
         project = "Machine_Translation_chars_2"
 
-    max_length = 40 # Max number of chars in sentence
+    max_length = 20 # Max number of chars in sentence: 40
 
 
 # Seq2Seq architecture
@@ -46,7 +46,7 @@ test_split = 0.2
 
 # Training process
 batch_size = 64  # Batch size for training.
-epochs = 25  # Number of epochs to train for.
+epochs = 2  # Number of epochs to train for.
 learning_rate = 0.001 #0.0001
 criterion = 'NLLLoss' #'CrossEntropyLoss'
 ltsm_layers = 2
@@ -58,6 +58,11 @@ name = f'{cell_type}-latent_dim={latent_dim},{criterion},opt={opt},lr={learning_
 # Paths
 path = f'{model}/{language}/{cell_type}'
 data_path = './spa-eng/spa.txt' #139705 lines
+
+
+save_models = False # Recommended to False.
+
+# If save_models == True: this paths must exists:
 
 # Models
 encoder_path = f'./models/{path}/encoder.h5'

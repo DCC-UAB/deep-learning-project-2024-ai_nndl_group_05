@@ -34,35 +34,39 @@ def create_wandb():
 
 if __name__ == "__main__":
     
-    # start a new wandb run to track this script
-    if config.do_wandb:
-        wandb.login(key="8090840539532ccc2f8ea5c1595fde6dbb57bf56")
-        create_wandb()
+    if config.model not in ["words","chars"]:
+        print("ERROR: WRONG MODEL NAME.")
+    else:
 
-    # Data preprocessing
-    print("\n#----------------------------------------#")
-    print("-------STARTING DATA PROCESSING------------")
-    print("#----------------------------------------#\n")
-    
-    input_lang, output_lang, train_loader, val_loader, test_loader = get_dataloader()
-    
-    # Training the model
-    print("\n#----------------------------------------#")
-    print("-------STARTING MODEL TRAINING------------")
-    print("#----------------------------------------#\n")
-    
-    train(input_lang, output_lang, train_loader, val_loader)
+        # start a new wandb run to track this script
+        if config.do_wandb:
+            wandb.login(key="8090840539532ccc2f8ea5c1595fde6dbb57bf56")
+            create_wandb()
 
-    print("\n#----------------------------------------#")
-    print("--------STARTING MODEL TESTING-------------")
-    print("#----------------------------------------#\n")
+        # Data preprocessing
+        print("\n#----------------------------------------#")
+        print("-------STARTING DATA PROCESSING------------")
+        print("#----------------------------------------#\n")
+        
+        input_lang, output_lang, train_loader, val_loader, test_loader = get_dataloader()
+        
+        # Training the model
+        print("\n#----------------------------------------#")
+        print("-------STARTING MODEL TRAINING------------")
+        print("#----------------------------------------#\n")
+        
+        train(input_lang, output_lang, train_loader, val_loader)
 
-    # Get test dataset accuracy
-    test(input_lang, output_lang, test_loader, type='test')
-    
-    # Get training and validation datasets final translations
-    test(input_lang, output_lang, train_loader, type='train')
-    test(input_lang, output_lang, val_loader, type='val')
+        print("\n#----------------------------------------#")
+        print("--------STARTING MODEL TESTING-------------")
+        print("#----------------------------------------#\n")
 
-    print("\nModel tested succesfully.\n")
+        # Get test dataset accuracy
+        test(input_lang, output_lang, test_loader, type='test')
+        
+        # Get training and validation datasets final translations
+        test(input_lang, output_lang, train_loader, type='train')
+        test(input_lang, output_lang, val_loader, type='val')
+
+        print("\nModel tested succesfully.\n")
     
