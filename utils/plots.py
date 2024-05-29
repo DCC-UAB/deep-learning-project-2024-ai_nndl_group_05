@@ -100,5 +100,5 @@ if __name__ == "__main__":
     # Print plots of hyperparameter tuning
 
     read_files(language="eng-spa")
-    #read_files(language="spa-eng")
+    read_files(language="spa-eng")
 
