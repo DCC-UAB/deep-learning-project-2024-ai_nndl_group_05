@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -7,7 +8,7 @@ def plot_bars(df,title,file_path):
     df_melted.rename(columns={'index': 'Step'}, inplace=True)
 
     sns.set(style='whitegrid')
-    plt.figure(figsize=(15, 9))
+    plt.figure(figsize=(25, 12))
 
     # Create the bar plot
     sns.barplot(data=df_melted, x='Step', y='Value', hue='Execution', palette='Paired')
@@ -16,7 +17,6 @@ def plot_bars(df,title,file_path):
     plt.xlabel('Step')
     plt.ylabel('Value')
     plt.title(title)
-
     # Save png
     plt.savefig(file_path, format='png')
 
@@ -41,8 +41,11 @@ def plot_hyperparam(df, title, file_path):
     plt.ylabel('Value')
     plt.title(title)
 
+    # Put legend outside
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), title='Execution')
+
     # Save png
-    plt.savefig(file_path, format='png')
+    plt.savefig(file_path, format='png', bbox_inches='tight')  # Ensure the legend is not cut off
 
     # Show the plot
     plt.show()
@@ -56,34 +59,34 @@ def drop_columns(df):
 
 
 def read_files(language):
-    print(language)
-
 
     for data in ["train","val","test"]:
 
         for graph in ["loss","acc","wer","per"]:
 
             try:
-                print(f'../models/{language}/wandb_graphs/{data}_{graph}.csv')
-                df = pd.read_csv(f'../models/{language}/wandb_graphs/{data}_{graph}.csv')
+                # Get paths
+                base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                path = os.path.join(base_dir, 'models', language, 'wandb_graphs', f'{data}_{graph}.csv')
+                image_path = os.path.join(base_dir, 'images', language, data, f'{data}_{graph}.csv')
+
+                # Get dataframes
+                df = pd.read_csv(path)
                 df = drop_columns(df)
+
                 if data == "test":
-                    plot_bars(df,title=f"{data} {graph}", file_path=f"./images/{language}/{data}_{graph}")
+                    plot_bars(df,title=f"{data} {graph}", file_path=image_path)
                 else:
-                    plot_hyperparam(df, title=f"{data} {graph}", file_path=f"./images/{language}/{data}_{graph}")
+                    plot_hyperparam(df, title=f"{data} {graph}", file_path=image_path)
 
             except:
                 print(f"CSV of {data} {graph} not found.") 
 
+# C:\Users\sara0\Desktop\uni\SECOND YEAR\NN & Deep Learning\dl project\deep-learning-project-2024-ai_nndl_group_05-4\models\eng-spa\wandb_graphs\test_acc.csv
+# models\eng-spa\wandb_graphs\test_loss.csv
 
 if __name__ == "__main__":
     # Print plots of hyperparameter tuning
     
     read_files(language="eng-spa")
-    read_files(language="spa-eng")
-
-    """
-    CAMBIAR PLOT TEST A BARS?
-    CHANGE PLOT SO THAT IT SAVES THE PNG AUTOMATICALLY
-    HACER PLOTS QUE SE VEAN TRADUCCIONES? O MEJOR TABLA Y YA?
-    """
+    #read_files(language="spa-eng")
