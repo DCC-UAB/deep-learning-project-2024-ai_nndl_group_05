@@ -37,6 +37,7 @@ def test(input_lang, output_lang, data_loader, type='test'):
     total_loss = []
     total_acc = []
     total_wer = []
+    total_cer = []
 
     with torch.no_grad():
         for batch_idx, data in enumerate(data_loader):
@@ -60,6 +61,11 @@ def test(input_lang, output_lang, data_loader, type='test'):
                 # Compute WER and PER for the current batch
                 wer = evaluate_wer(decoder_outputs, target_tensor, output_lang)
                 total_wer.append(wer)
+                
+            elif config.model == "chars":
+                # Compute WER and PER for the current batch
+                cer = evaluate_cer(decoder_outputs, target_tensor, output_lang)
+                total_cer.append(cer)
             
             for input, output, target in zip(input_tensor, decoder_outputs, target_tensor):
                 input_words, decoded_words, target_words = translate(input_lang, output_lang, 
@@ -76,10 +82,11 @@ def test(input_lang, output_lang, data_loader, type='test'):
                     elif config.model == "chars":
                         print(f'    Step [{batch_idx+1}/{len(data_loader)}], ' 
                             f' Loss: {loss.item():.4f}, '
-                            f'Accuracy: {acc:.4f}')
+                            f'Accuracy: {acc:.4f},'
+                            f'CER: {cer:.4f}')
 
     avg_loss = sum(total_loss) / len(data_loader)
-    avg_acc = sum(total_acc) / len(data_loader)    
+    avg_acc = sum(total_acc) / len(data_loader) 
 
     if config.model == "words": 
         avg_wer = sum(total_wer) / len(data_loader)
@@ -92,17 +99,19 @@ def test(input_lang, output_lang, data_loader, type='test'):
         # Store loss and accuracy evolution
         if type == 'test':
             if config.do_wandb:
-                wandb.log({'test/loss': avg_loss, 
-                        'test/accuracy': avg_acc,
-                        'test/WER': avg_wer})
+                wandb.log({'test/loss': avg_loss, 'test/accuracy': avg_acc, 'test/WER': avg_wer})
             
     elif config.model == "chars":
+        avg_cer = sum(total_cer) / len(data_loader)
+
+        
         print(f'Average loss of {type} data: {avg_loss:.4f}, '
-            f'Average accuracy of {type} data: {avg_acc:.4f}')
+            f'Average accuracy of {type} data: {avg_acc:.4f},'
+            f'Average CER of {type} data: {avg_cer:.4f}')
         # Store loss and accuracy evolution
         if type == 'test':
             if config.do_wandb:
-                wandb.log({'test/loss': avg_loss, 'test/accuracy': avg_acc})
+                    wandb.log({'test/loss': avg_loss, 'test/accuracy': avg_acc, 'test/CER': avg_cer})
     
 
     # Store translated sentences in csv
