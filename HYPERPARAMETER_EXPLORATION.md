@@ -8,6 +8,7 @@ Since, our time, as in, with a virtual machine is limited we couldn’t try all 
 In the repository, there’s a folder called ‘images’, where we save the plots with the different results for each pair of languages. And then compute different metrics in each set (train, validation, and test), and saving them in their respective folder as well. Each set have their own best architecture for each metric, as shown in the plots, but to have an overall vision, we will talk about the results for ‘Accuracy’, on the test set.
 
 When translating from English to Spanish, we found this configuration to be the best one on the test set:		
+
 	-LSTM with a latent dimension of 256, using a Cross Entropy Loss, an Adam optimizer, a learning rate of 0.001 and a dropout of 0.2.
 
 ![imagen_2024-05-29_225423790](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/assets/93304682/5d7b24d1-5d17-4276-8edf-b45bf4b8404c)
