@@ -103,6 +103,14 @@ $ conda init bash
 $ conda activate projectDL
 ```
 
+To select the interpreter of the environment, press 'Ctrl+Shift+P', search 'Python: Select interpreter' and click on the environment interpreter.
+If you can't see the interpreter, in the terminal write
+```
+which python
+```
+Copy the path that output. Press again 'Ctrl+Shift+P', press in 'Enter interpreter path' and paste the path you have copied before.
+
+
 
 In case that you can't see all the branches, run the command:
 ```bash
