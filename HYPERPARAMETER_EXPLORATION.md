@@ -1,4 +1,4 @@
-In this file we would explain our hyperparameter exploration for our model.
+# Hyperparameter exploration
 
 We did a thorough search of hyperparameters to understand better our model and our data and see which ones maximize the accuracy and other metrics we computed, such as ‘wer’ 
 (Word error rate), ‘cer’ (Character error rate) and ‘bleu’ (Bilingual Evaluation Understudy). 
@@ -7,10 +7,11 @@ Since, our time, as in, with a virtual machine is limited we couldn’t try all 
 
 In the repository, there’s a folder called ‘images’, we have saved both models, word-based, and character-based. In each folder, we save the plots with the different results for each pair of languages. And then compute different metrics in each set (train, validation, and test), and saving them in their respective folder as well. Each set have their own best architecture for each metric, as shown in the plots, but to have an overall vision, we will talk about the results for ‘Accuracy’, on the train and test set.
 
-For the word-based model we got this results:
+## Word-based model
+
 On the train set, the best results when translating from English to Spanish: 
 
-	-LSTM with a latent dimension of 256, using a Negative log likelihood Loss, an Adam optimizer, a learning rate of 0.001 and a dropout of 0. It has a 0.91 acuracy. 
+	-LSTM with a latent dimension of 256, using a Negative log likelihood Loss, an Adam optimizer, a learning rate of 0.001 and a dropout of 0. It has a 0.91 accuracy. 
 
  ![image](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/assets/93304682/f1a642b2-897b-4087-ac46-697c0ca00741)
 
@@ -18,6 +19,16 @@ From Spanish to English, however the best was a
 
  	-GRU, with a latent dimension of 256, NLLL loss, Adam, lr = 0.001 and dropout 0.2, we got a 0.84 training accuracy.
 ![image](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/blob/main/images/words/spa-eng/train/train_acc.png?raw=true)
+
+On the validation set, from English to Spanish:
+
+	-LSTM with a latent dimension of 256, using a Cross Entropy Loss, an Adam optimizer, a learning rate of 0.001 and a dropout of 0.2. It has a 0.56 accuracy. 
+![image](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/blob/main/images/words/eng-spa/val/val_acc.png?raw=true)
+
+And from Spanish to English:
+
+	-LSTM with a latent dimension of 256, using a Negative log likelihood Loss, an RMSprop optimizer, a learning rate of 0.001 and a dropout of 0.2. It has a 0.63 accuracy. 
+![image](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/blob/main/images/words/spa-eng/val/val_acc.png?raw=true)
 
 On the test set, when translating from English to Spanish, we found this configuration to be the best one:		
 
@@ -37,7 +48,7 @@ Which what we considered at the start. The second-best result was not exactly wh
 
 
 
-Then, with the character-based model we saw this configuration to be the most accurate:
+## Character-based model
 On the training set, when doing Eng->Spa
 
 	-LSTM latent dim = 256, NLLL loss, opt = RMSProp, lr of 0.001 and dropout = 0.2, accuracy = 0.78
@@ -50,8 +61,15 @@ And from Spanish to English:
 
 ![image](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/assets/93304682/f655ebdd-0774-4222-a87c-25182dc0c9af)
 
+On the validation set, from English to Spanish:
 
+	-LSTM with a latent dimension of 256, using a NLLLoss, an RMSprop optimizer, a learning rate of 0.001 and a dropout of 0.2. It has a 0.78 accuracy. 
+![image](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/blob/main/images/chars/eng-spa/val/val_acc.png?raw=true)
 
+And from Spanish to English:
+
+	-LSTM with a latent dimension of 256, using a Negative log likelihood Loss, an RMSprop optimizer, a learning rate of 0.001 and a dropout of 0.2. It has a 0.63 accuracy. 
+![image](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/blob/main/images/chars/spa-eng/val/val_acc.png?raw=true)
 
 And on the test set, from English to Spanish: 
 
