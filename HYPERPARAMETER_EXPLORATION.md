@@ -33,9 +33,15 @@ From English to Spanish:
 
 	-LSTM with a latent dimension of 256, a negative log likelihood loss, an RMSProp optimizer, a learning rate of 0.001 and a dropout of 0.2, with that, we managed to get a 0.75 accuracy.
 
+ ![image](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/assets/93304682/e0779305-5e85-43f7-be84-8f43b1041383)
+
+
 And from Spanish to English:
 
 	-LSTM with a latent dimension of 256, a negative log likelihood loss, an RMSProp optimizer, a learning rate of 0.001 and a dropout of 0.2, this had a 0.78 accuracy.
+
+ ![image](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/assets/93304682/ad05787b-18d9-4859-ba78-630d7881f98c)
+
 
 We observed that here, independently of the order, for Spanish and English, this architecture gave us the better results. 
 	
