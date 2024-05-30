@@ -36,7 +36,7 @@ On the test set, when translating from English to Spanish, we found this configu
 
 ![imagen_2024-05-29_225423790](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/assets/93304682/5d7b24d1-5d17-4276-8edf-b45bf4b8404c)
 
-Let's just consider why those hyperparameters might be the correct ones:
+Let's just consider why those hyperparameters might be the correct ones for word-based implementation:
 
 - **LSTM with a latent dimension of 256**
 - **Cross Entropy Loss**
