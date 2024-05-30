@@ -182,6 +182,21 @@ The process of both functions is similar, so it can be resumed as:
     
     4. Obtain the loss 
 
+Neverthless is important to consider the following part of our code:
+
+"""
+if target_tensor is not None:
+                # Teacher forcing: Feed the target as the next input
+                decoder_input = target_tensor[:, i].unsqueeze(1) # Teacher forcing
+            else:
+                # Without teacher forcing: use its own predictions as the next input
+                _, topi = decoder_output.topk(1)
+                decoder_input = topi.squeeze(-1).detach()  # detach from history as input
+"""
+This actually refers that our lstm to avoid spending lot of time learning from scratch the correct words it uses as input the ground truth and only predicts the next word (without this one affecting the next one, as it will take the ground truth)
+
+
+#EVALUATION METHODS
 Lastly, is important to consider the different evaluate methods that were used in character level and word level:
 
 - Both of them use accuracy and loss evaluation. While loss can be determinant to know how the model is evolving over the time, the acuracy is based on the obtained sequences (comparing the expected and the predicted). As in this case, each sentence only has one correct output (so no synonyms are cosidered correct), just having one word wrong across the sentence will decay a lot the accuracy value. Taht is why we have tried other mechanisms:
