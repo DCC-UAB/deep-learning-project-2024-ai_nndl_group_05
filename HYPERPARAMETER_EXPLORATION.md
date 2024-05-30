@@ -1,7 +1,7 @@
 # Hyperparameter exploration
 
 We did a thorough search of hyperparameters to understand better our model and our data and see which ones maximize the accuracy and other metrics we computed, such as ‘wer’ 
-(Word error rate), ‘cer’ (Character error rate) and ‘bleu’ (Bilingual Evaluation Understudy). 
+(Word error rate) and ‘cer’ (Character error rate). 
 
 Since, our time, as in, with a virtual machine is limited we couldn’t try all combinations, so we changed our approach to look what parameters got better results and then do slight modifications. We also had a hypothesis in mind, that was, hyperparameters that maximize our metrics should be similar when doing reverse translation (taking the input language as the output and the other way around). Another theory that we wanted to confirm was that if we use a different architecture, but the languages are the same, the hyperparameters would be similar.
 
