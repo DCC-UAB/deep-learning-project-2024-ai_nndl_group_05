@@ -18,6 +18,8 @@ dependencies:
   - jiwer
   - seaborn
   - jmcmurray::os
+  - torchmetrics
+  - tqdm
   - pip:
     - torch
     - torchviz
