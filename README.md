@@ -11,7 +11,7 @@ Here is an image to have an idea of what the model does:
 ## Code structure
 * images
 
-    It contain a photo of how the encoder-decoder model works. 
+    It contain a photo of how the encoder-decoder model works for both the word-based model, and for the character-based model. 
     
     It also have the images of the plots obtained in the plots.py
 
@@ -25,7 +25,7 @@ Here is an image to have an idea of what the model does:
 
 * utils
 
-    The folder has three .py inside.
+    The folder has four .py inside.
     - data.py is used to preprocess the data in order to enter it to the model
     - plots.py make plots of the hyperparameter exploration
     - training.py is the loop of training the model
