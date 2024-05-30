@@ -182,6 +182,8 @@ The process of both functions is similar, so it can be resumed as:
     
     4. Obtain the loss 
 
+#### RELEVANT CONCRETE PART OF THE LSTM:
+
 Neverthless is important to consider the following part of our code:
 
 	if target_tensor is not None:
