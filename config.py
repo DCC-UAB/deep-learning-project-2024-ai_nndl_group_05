@@ -2,7 +2,7 @@
 #--------------CONFIGURATION----------------#
 #-------------------------------------------#
 
-model = "words" #"chars"
+model = "chars" #"words"
 do_wandb = False # Recommended to False.
 
 # Set language
