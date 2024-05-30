@@ -11,13 +11,13 @@ Here is an image to have an idea of what the model does:
 ## Code structure
 * images
 
-    It contain a photo of how the encoder-decoder model works for both the word-based model, and for the character-based model. 
+    It contains a photo of how the encoder-decoder model works for both the word-based model, and for the character-based model. 
     
     It also have the images of the plots obtained in the plots.py.
 
 * models
 
-    It stores the model encoder.h5 and decoder.h5 that was last run. It also contains CSV files with the translations that the last model run gave, for all test, train and validation datasets. It contains a subfolder to play telephone (play_telephone.py) with the best encoders and decoders for both languages Spanish and English. On a previous version, the folder contained subfolders for each language (eng-spa and spa-eng) and also in each language contained subfolders with each cell type (LSTM and GRU). However, this folder was simplified because storing that many models 
+    It stores the model encoder.h5 and decoder.h5 that was last run. It also contains CSV files with the translations that the last model run gave, for all test, train and validation datasets. It contains a subfolder to play telephone (play_telephone.py) with the best encoders and decoders for both languages Spanish and English. On a previous version, the folder contained subfolders for each language (eng-spa and spa-eng) and also in each language contained subfolders with each cell type (LSTM and GRU). However, this folder was simplified because storing that many models made the folder weight 1GB.
 
 * spa - eng
 
@@ -59,6 +59,7 @@ Here is an image to have an idea of what the model does:
   - config.max_lenght must be set to 15.
   - config.latent_dim must be set to 256.
   - config.cell_type must be set to LSTM.
+  
   This is because, in the original version of play_telephone.py, it took the latest models run from Spanish-English and English-Spanish stored in the models folder. However, since we had to delete the models stored for the final delivery (again, the file was too heavy - each model stored occupied 50MB), we decided to set it so that it can be used with some determined models. That's why the configurations in config.py must be aligned with the models' configurations.
  
 
