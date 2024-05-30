@@ -53,7 +53,7 @@ Lastly, Dropout. It is a regularization technique used to prevent overfitting by
 
 However, it should be mentioned that it is remarkable, that GRU goot similar results with same hyperparameters 256 latent dim, a negative log likelihood loss (NLLL), adagrad, lr = 0.001 and dropout = 0.
 
-This is because they work similar, the main differesnce is:
+This is because they work similar. The main difference is:
 
 If we consider the LSTM structure it has 3 gates (input, output, and forget gates) and a cell state. This allows LSTMs to learn and remember more intricate dependencies within the data. While GRU has two gates (reset and update gates) and combines the cell state and hidden state into a single vector. This makes GRUs simpler and slightly less expressive compared to LSTMs.
 
