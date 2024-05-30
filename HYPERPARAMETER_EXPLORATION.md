@@ -17,7 +17,7 @@ On the train set, the best results when translating from English to Spanish:
 From Spanish to English, however the best was a 
 
  	-GRU, with a latent dimension of 256, NLLL loss, Adam, lr = 0.001 and dropout 0.2, we got a 0.84 training accuracy.
-
+![image](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/blob/main/images/words/spa-eng/train/train_acc.png?raw=true)
 
 On the test set, when translating from English to Spanish, we found this configuration to be the best one:		
 
