@@ -88,7 +88,7 @@ py main.py
 
 If you have trouble activating the environment and the error that shows up says something like:
 
-    -  Your shell has not been properly configured to use 'conda activate'
+-  Your shell has not been properly configured to use 'conda activate'
 
 Do this instructions in the terminal:
 ```bash
@@ -104,7 +104,7 @@ $ conda init bash
 $ conda activate projectDL
 ```
 
-To select the interpreter of the environment, press 'Ctrl+Shift+P', search 'Python: Select interpreter' and click on the environment interpreter.
+If you are in Visual Studio Code, you would have to select the interpreter manually. To select the interpreter of the environment, press 'Ctrl+Shift+P', search 'Python: Select interpreter' and click on the environment interpreter.
 If you can't see the interpreter, in the terminal write
 ```
 which python
