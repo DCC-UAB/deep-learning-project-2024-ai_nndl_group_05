@@ -108,6 +108,6 @@ For the Character-based model we can see that the hyperparameters are quite simi
 
 Finally, we observed that here, independently of the order, for Spanish and English, this architecture gave us the better results (considering accuracy, which is biased by the amount of words and characters. Eg: if sentence as 4 words and 1 is wrong the accuracy will decrease a lot, however if we have a wrong character as there are more instances it will be less affected). 
 
-See in SPECIFICATIONS [LINK]() for more information about the evaluation matrics
+See in [MODEL_SPECIFICATIONS.md](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/blob/main/MODEL_SPECIFICATIONS.md) for more information about the evaluation matrics.
 
 	
