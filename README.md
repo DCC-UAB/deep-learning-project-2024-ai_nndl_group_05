@@ -80,11 +80,29 @@ $ cd deep-learning-project-2024-ai_nndl_group_05
 $ conda env create --file environment.yml
 
 # Activating the environment
-$ conda activate xnap-example
+$ conda activate projectDL
 
 # For running the project
 py main.py
 ```
+
+If you have trouble activating the environment and the error that shows up says something like:
+    -  Your shell has not been properly configured to use 'conda activate'
+
+Do this instructions in the terminal:
+```bash
+# To know which type of shell you have 
+$ echo $SHELL
+
+# IF the output of the command above is for example: /bin/bash  
+
+# To initialize the shell 
+$ conda init bash
+
+# To activate the environment
+$ conda activate projectDL
+```
+
 
 In case that you can't see all the branches, run the command:
 ```bash
