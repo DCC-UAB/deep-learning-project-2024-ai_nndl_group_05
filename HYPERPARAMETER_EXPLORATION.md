@@ -36,7 +36,26 @@ On the test set, when translating from English to Spanish, we found this configu
 
 ![imagen_2024-05-29_225423790](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/assets/93304682/5d7b24d1-5d17-4276-8edf-b45bf4b8404c)
 
-However, it is remarkable, since it got similar results a GRU with 256 latent dim, a negative log likelihood loss (NLLL), adagrad, lr = 0.001 and dropout = 0.
+Let's just consider why those hyperparameters might be the correct ones:
+
+- **LSTM with a latent dimension of 256**
+- **Cross Entropy Loss**
+- **Adam optimizer**
+- **Learning rate of 0.001**
+- **Dropout of 0.2**
+
+First the use of LSTM allows to handle sequential data and capture long-range dependencies in sequences. A latent dimension of 256 units, enhance our model with enough parameters to model the intricacies of language without being too large to cause overfitting or computational inefficiencies. 
+Aside from that, We have the Cross Entropy Loss, which is suitable for classification tasks, where the goal is to predict the probability distribution of a set of discrete classes (words, in this case). It is particularly effective in measuring the performance of a model whose output is a probability value between 0 and 1. The use of Cross entropy loss helps in penalizing the divergence between the predicted probability distribution and the true distribution, thereby fine-tuning the model to improve its predictions. 
+Moreover we have the optimizer: Adam (Adaptive Moment Estimation) which adjusts the learning rate for each parameter dynamically. This optimizer combines AdaGrad and RMSProp.
+Beside having a learning rate of 0.01 typically provides a good balance between speed and stability of convergence, allowing the model to learn effectively without large oscillations in the loss function (low enough to ensure stable training and high enough to allow the model to make significant updates to the weights). And so it happends in the model.
+Lastly, Dropout. It is a regularization technique used to prevent overfitting by randomly setting a fraction of input units to zero at each update during training. In our case the value is of 0.2 means that 20% of the neurons will be dropped out during each training step, which helps in improving the generalization of the model (not relying on specific neurons).
+
+
+However, it should be mentioned that it is remarkable, that GRU goot similar results with same hyperparameters 256 latent dim, a negative log likelihood loss (NLLL), adagrad, lr = 0.001 and dropout = 0.
+
+This is because they work similar, the main differesnce is:
+
+If we consider the LSTM structure it has 3 gates (input, output, and forget gates) and a cell state. This allows LSTMs to learn and remember more intricate dependencies within the data. While GRU has two gates (reset and update gates) and combines the cell state and hidden state into a single vector. This makes GRUs simpler and slightly less expressive compared to LSTMs.
 
 When translating from Spanish to English, we observed that the configuration that was the best one was:
 
@@ -85,5 +104,8 @@ And from Spanish to English:
  ![image](https://github.com/DCC-UAB/deep-learning-project-2024-ai_nndl_group_05/assets/93304682/ad05787b-18d9-4859-ba78-630d7881f98c)
 
 
-We observed that here, independently of the order, for Spanish and English, this architecture gave us the better results. 
+For the Character-based model we can see that the hyperparameters are quite similar to the word-based ones. Only the optimizer changes from Adam to RMSProp which actually it makes sense as Adam uses RMSProp. In theory Adam is a combination of RMSprop with momentum and should be more robust and faster in convergence. However, RMSprop on its own is still very effective and might even outperform Adam in certain scenarios (simpler implementation and specific handling of learning rates).
+
+Finally, we observed that here, independently of the order, for Spanish and English, this architecture gave us the better results (considering accuracy, which is biased by the amount of words and characters. Eg: if sentence as 4 words and 1 is wrong the accuracy will decrease a lot, however if we have a wrong character as there are more instances it will be less affected). 
+
 	
