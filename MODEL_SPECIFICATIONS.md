@@ -184,15 +184,15 @@ The process of both functions is similar, so it can be resumed as:
 
 Neverthless is important to consider the following part of our code:
 
-"""
-if target_tensor is not None:
-                # Teacher forcing: Feed the target as the next input
+
+- if target_tensor is not None:
+                #Teacher forcing: Feed the target as the next input
                 decoder_input = target_tensor[:, i].unsqueeze(1) # Teacher forcing
             else:
-                # Without teacher forcing: use its own predictions as the next input
+                #Without teacher forcing: use its own predictions as the next input
                 _, topi = decoder_output.topk(1)
                 decoder_input = topi.squeeze(-1).detach()  # detach from history as input
-"""
+
 This actually refers that our lstm to avoid spending lot of time learning from scratch the correct words it uses as input the ground truth and only predicts the next word (without this one affecting the next one, as it will take the ground truth)
 
 
