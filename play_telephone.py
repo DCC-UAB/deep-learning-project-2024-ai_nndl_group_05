@@ -9,13 +9,13 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def loadModels(input_lang, output_lang):
     encoder_io = EncoderRNN(input_lang.n_words, config.latent_dim).to(device)
     decoder_io =  DecoderRNN(config.latent_dim, output_lang.n_words).to(device)
-    encoder_io.load_state_dict(torch.load('./models/play_telephone/encoder_eng-spa.h5', map_location=torch.device('cpu')))
-    decoder_io.load_state_dict(torch.load('./models/play_telephone/decoder_eng-spa.h5', map_location=torch.device('cpu')))
+    encoder_io.load_state_dict(torch.load('./models/best_models/encoder_eng-spa.h5', map_location=torch.device('cpu')))
+    decoder_io.load_state_dict(torch.load('./models/best_models/decoder_eng-spa.h5', map_location=torch.device('cpu')))
     
     encoder_oi = EncoderRNN(output_lang.n_words, config.latent_dim).to(device)
     decoder_oi =  DecoderRNN(config.latent_dim, input_lang.n_words).to(device)
-    encoder_oi.load_state_dict(torch.load('./models/play_telephone/encoder_spa-eng.h5', map_location=torch.device('cpu')))
-    decoder_oi.load_state_dict(torch.load('./models/play_telephone/decoder_spa-eng.h5', map_location=torch.device('cpu')))
+    encoder_oi.load_state_dict(torch.load('./models/best_models/encoder_spa-eng.h5', map_location=torch.device('cpu')))
+    decoder_oi.load_state_dict(torch.load('./models/best_models/decoder_spa-eng.h5', map_location=torch.device('cpu')))
 
     return encoder_io, decoder_io, encoder_oi, decoder_oi
 

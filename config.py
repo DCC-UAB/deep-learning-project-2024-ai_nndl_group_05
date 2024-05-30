@@ -2,11 +2,11 @@
 #--------------CONFIGURATION----------------#
 #-------------------------------------------#
 
-model = "chars" #"chars"
+model = "words" #"chars"
 do_wandb = False # Recommended to False.
 
 # Set language
-reverse = True
+reverse = False
 
 if reverse == False:
     language = "eng-spa"
@@ -25,7 +25,7 @@ if model == "words":
     elif reverse == True:
         project = "Machine_Translation_words_2"
     
-    max_length = 5 # Max number of words in sentence: 15 - recommended.
+    max_length = 15 # Max number of words in sentence: 15 - recommended.
 
 elif model == "chars":
     if reverse == False:
