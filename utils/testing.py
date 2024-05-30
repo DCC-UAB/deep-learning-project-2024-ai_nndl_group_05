@@ -3,15 +3,20 @@ import wandb
 import pandas as pd
 import torch
 import torch.nn as nn
-from utils.training import *
+from utils.training import EncoderRNN, DecoderRNN
+from utils.training import compute_accuracy, evaluate_wer, translate, evaluate_cer
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def loadEncoderDecoderModel(input_lang, output_lang):
-    encoder = EncoderRNN(input_lang.n_words, config.latent_dim).to(device)
-    decoder =  DecoderRNN(config.latent_dim, output_lang.n_words).to(device)
+    if config.model == "words":
+        encoder = EncoderRNN(input_lang.n_words, config.latent_dim).to(device)
+        decoder =  DecoderRNN(config.latent_dim, output_lang.n_words).to(device)
+    elif config.model == "chars":
+        encoder = EncoderRNN(input_lang.n_chars, config.latent_dim).to(device)
+        decoder = DecoderRNN(config.latent_dim, output_lang.n_chars).to(device)
     encoder.load_state_dict(torch.load(config.encoder_path))
     decoder.load_state_dict(torch.load(config.decoder_path))
     return encoder, decoder
@@ -32,7 +37,7 @@ def test(input_lang, output_lang, data_loader, type='test'):
     total_loss = []
     total_acc = []
     total_wer = []
-    total_per = []
+    total_cer = []
 
     with torch.no_grad():
         for batch_idx, data in enumerate(data_loader):
@@ -52,12 +57,15 @@ def test(input_lang, output_lang, data_loader, type='test'):
             total_loss.append(loss.item())
             total_acc.append(acc)
 
-            # Compute WER and PER for the current batch
-            wer = evaluate_wer(decoder_outputs, target_tensor, output_lang)
-            total_wer.append(wer)
-
-            per = evaluate_per(decoder_outputs, target_tensor, output_lang)
-            total_per.append(per)
+            if config.model == "words":
+                # Compute WER and PER for the current batch
+                wer = evaluate_wer(decoder_outputs, target_tensor, output_lang)
+                total_wer.append(wer)
+                
+            elif config.model == "chars":
+                # Compute WER and PER for the current batch
+                cer = evaluate_cer(decoder_outputs, target_tensor, output_lang)
+                total_cer.append(cer)
             
             for input, output, target in zip(input_tensor, decoder_outputs, target_tensor):
                 input_words, decoded_words, target_words = translate(input_lang, output_lang, 
@@ -66,29 +74,45 @@ def test(input_lang, output_lang, data_loader, type='test'):
 
             if type == 'test':
                 if batch_idx % config.batch_size == 0:
-                    print(f'    Step [{batch_idx+1}/{len(data_loader)}], ' 
-                        f' Loss: {loss.item():.4f}, '
-                        f'Accuracy: {acc:.4f}, '
-                        f'WER: {wer:.4f}, '
-                        f'PER: {per:.4f}')
+                    if config.model == "words":
+                        print(f'    Step [{batch_idx+1}/{len(data_loader)}], ' 
+                            f' Loss: {loss.item():.4f}, '
+                            f'Accuracy: {acc:.4f}, '
+                            f'WER: {wer:.4f}')
+                    elif config.model == "chars":
+                        print(f'    Step [{batch_idx+1}/{len(data_loader)}], ' 
+                            f' Loss: {loss.item():.4f}, '
+                            f'Accuracy: {acc:.4f},'
+                            f'CER: {cer:.4f}')
 
     avg_loss = sum(total_loss) / len(data_loader)
-    avg_acc = sum(total_acc) / len(data_loader)     
-    avg_wer = sum(total_wer) / len(data_loader)
-    avg_per = sum(total_per) / len(data_loader)
+    avg_acc = sum(total_acc) / len(data_loader) 
+
+    if config.model == "words": 
+        avg_wer = sum(total_wer) / len(data_loader)
+        
+        # Print final metrics
+        print(f'Average loss of {type} data: {avg_loss:.4f}, '
+            f'Average accuracy of {type} data: {avg_acc:.4f}, '
+            f'Average WER of {type} data: {avg_wer:.4f}')
+        
+        # Store loss and accuracy evolution
+        if type == 'test':
+            if config.do_wandb:
+                wandb.log({'test/loss': avg_loss, 'test/accuracy': avg_acc, 'test/WER': avg_wer})
+            
+    elif config.model == "chars":
+        avg_cer = sum(total_cer) / len(data_loader)
+
+        
+        print(f'Average loss of {type} data: {avg_loss:.4f}, '
+            f'Average accuracy of {type} data: {avg_acc:.4f}, '
+            f'Average CER of {type} data: {avg_cer:.4f}')
+        # Store loss and accuracy evolution
+        if type == 'test':
+            if config.do_wandb:
+                    wandb.log({'test/loss': avg_loss, 'test/accuracy': avg_acc, 'test/CER': avg_cer})
     
-    # Print final metrics
-    print(f'Average loss of {type} data: {avg_loss}, '
-          f'Average accuracy of {type} data: {avg_acc}, '
-          f'Average WER of {type} data: {avg_wer}, '
-          f'Average PER of {type} data: {avg_per}')
-    
-    # Store loss and accuracy evolution
-    if type == 'test':
-        wandb.log({'test/loss': avg_loss, 
-                'test/accuracy': avg_acc,
-                'test/WER': avg_wer,
-                'test/PER': avg_per})
 
     # Store translated sentences in csv
     df = pd.DataFrame(translated_sentences, columns=['Input', 'Output', 'Target'])
@@ -101,54 +125,3 @@ def test(input_lang, output_lang, data_loader, type='test'):
         path = config.results_path_test
 
     df.to_csv(path, index=False)
-
-
-
-# EVALUATE FUNCTIONS
-"""def indexesFromSentence(lang, sentence):
-    return [lang.word2index[word] for word in sentence.split(' ')]
-
-def tensorFromSentence(lang, sentence):
-    indexes = indexesFromSentence(lang, sentence)
-    indexes.append(EOS_token)
-    return torch.tensor(indexes, dtype=torch.long, device=device).view(1, -1)
-
-
-def tensorsFromPair(pair, input_lang, output_lang):
-    input_tensor = tensorFromSentence(input_lang, pair[0])
-    target_tensor = tensorFromSentence(output_lang, pair[1])
-    return (input_tensor, target_tensor)
-
-def evaluate(encoder, decoder, sentence, input_lang, output_lang):
-    with torch.no_grad():
-        input_tensor = tensorFromSentence(input_lang, sentence)
-
-        encoder_outputs, encoder_hidden = encoder(input_tensor)
-        decoder_outputs, decoder_hidden, decoder_attn = decoder(encoder_outputs, encoder_hidden)
-
-        _, topi = decoder_outputs.topk(1)
-        decoded_ids = topi.squeeze()
-
-        decoded_words = []
-        for idx in decoded_ids:
-            if idx.item() == EOS_token:
-                decoded_words.append('<EOS>')
-                break
-            decoded_words.append(output_lang.index2word[idx.item()])
-    return decoded_words, decoder_attn
-
-def evaluateRandomly(encoder, decoder, n=10):
-    encoder.eval()
-    decoder.eval()
-    for i in range(n):
-        pair = random.choice(pairs)
-        print('>', pair[0])
-        print('=', pair[1])
-        output_words, _ = evaluate(encoder, decoder, pair[0], input_lang, output_lang)
-        output_sentence = ' '.join(output_words)
-        print('<', output_sentence)
-        print('')"""
-
-
-    
-

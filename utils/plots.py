@@ -68,37 +68,35 @@ def drop_columns(df):
     return df
 
 
-def read_files(language):
+if __name__ == "__main__":
+
+    print("WARNING: Only run if user has the necessary data: file './models' is needed.")
 
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    for data in ["train","val","test"]:
+    for model in ["words","chars"]:
+        for language in ["eng-spa","spa-eng"]:
+            for data in ["train","val","test"]:
+                for graph in ["loss","acc","wer","per"]:
 
-        for graph in ["loss","acc","wer","per"]:
+                    # Get paths
+                    file_path = os.path.join(base_dir, 'models', model, language, 'wandb_graphs', f'{data}_{graph}.csv')
+                    image_path = os.path.join(base_dir, 'images', model, language, data, f'{data}_{graph}.png')
 
-            # Get paths
-            file_path = os.path.join(base_dir, 'models', language, 'wandb_graphs', f'{data}_{graph}.csv')
-            image_path = os.path.join(base_dir, 'images', language, data, f'{data}_{graph}.png')
+                    try:
+                        # Get dataframes
+                        df = pd.read_csv(file_path)
+                    except:
+                        print(f"File {model}/{language}/{data}_{graph}.csv not found.")
+                    
+                    else:
+                        df = drop_columns(df)
 
-            try:
-                # Get dataframes
-                df = pd.read_csv(file_path)
-            except:
-                print(f"CSV of {data} {graph} not found.")
-            
-            else:
-                df = drop_columns(df)
-
-                if data == "test":
-                    plot_bars(df,title=f"{data} {graph}", file_path=image_path)
-                else:
-                    plot_hyperparam(df, title=f"{data} {graph}", file_path=image_path)
+                        if data == "test":
+                            plot_bars(df,title=f"{data} {graph}", file_path=image_path)
+                        else:
+                            plot_hyperparam(df, title=f"{data} {graph}", file_path=image_path)
 
                  
 
-if __name__ == "__main__":
-    # Print plots of hyperparameter tuning
-
-    read_files(language="eng-spa")
-    read_files(language="spa-eng")
 
