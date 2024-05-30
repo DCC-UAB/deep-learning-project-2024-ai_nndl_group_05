@@ -87,6 +87,7 @@ py main.py
 ```
 
 If you have trouble activating the environment and the error that shows up says something like:
+
     -  Your shell has not been properly configured to use 'conda activate'
 
 Do this instructions in the terminal:
