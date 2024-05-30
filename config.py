@@ -2,11 +2,11 @@
 #--------------CONFIGURATION----------------#
 #-------------------------------------------#
 
-model = "words" #"chars"
+model = "chars" #"chars"
 do_wandb = False # Recommended to False.
 
 # Set language
-reverse = False
+reverse = True
 
 if reverse == False:
     language = "eng-spa"
@@ -25,7 +25,7 @@ if model == "words":
     elif reverse == True:
         project = "Machine_Translation_words_2"
     
-    max_length = 15 # Max number of words in sentence: 15
+    max_length = 5 # Max number of words in sentence: 15 - recommended.
 
 elif model == "chars":
     if reverse == False:
@@ -33,12 +33,12 @@ elif model == "chars":
     elif reverse == True:
         project = "Machine_Translation_chars_2"
 
-    max_length = 20 # Max number of chars in sentence: 40
+    max_length = 20 # Max number of chars in sentence: 40 - recommended.
 
 
 # Seq2Seq architecture
-cell_type = 'LSTM' #'GRU'
-latent_dim = 256 #256 # Latent dimensionality of the encoding space.
+cell_type = 'LSTM' #'LSTM' or 'GRU'
+latent_dim = 256 #128 or 256 # Latent dimensionality of the encoding space.
 
 # Datasets
 validation_split = 0.2
@@ -46,12 +46,12 @@ test_split = 0.2
 
 # Training process
 batch_size = 64  # Batch size for training.
-epochs = 2  # Number of epochs to train for.
-learning_rate = 0.001 #0.0001
+epochs = 3  # Number of epochs to train for. 20 recommended.
+learning_rate = 0.001 #0.001 (recommended) or 0.01
 criterion = 'NLLLoss' #'CrossEntropyLoss'
 ltsm_layers = 2
 dropouts = 0.2
-opt = 'Adam' #'RMSprop'
+opt = 'Adam' #'Adam' or 'RMSprop'
 name = f'{cell_type}-latent_dim={latent_dim},{criterion},opt={opt},lr={learning_rate},dropout={dropouts}'
 
 
